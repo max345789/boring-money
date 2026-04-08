@@ -239,7 +239,7 @@ function createSqliteDatabase(dbPath) {
 }
 
 function createPostgresDatabase(connectionString) {
-  const ssl = /sslmode=require/i.test(connectionString)
+  const ssl = /sslmode=(?:require|no-verify)/i.test(connectionString)
     ? { rejectUnauthorized: false }
     : undefined;
   const pool = new Pool({
