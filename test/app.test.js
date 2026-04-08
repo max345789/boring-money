@@ -298,6 +298,128 @@ test('global rate limiter applies to all endpoints', async (t) => {
   assert.match(body.error, /too many requests/i);
 });
 
+test('turnstile-protected subscriber API requires and validates token', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    turnstile: {
+      siteKey: 'site-key',
+      secretKey: 'secret-key'
+    },
+    turnstileVerifier: async ({ token }) => {
+      if (!token) {
+        return { ok: false, error: 'missing-token' };
+      }
+
+      if (token === 'valid-token') {
+        return { ok: true };
+      }
+
+      return { ok: false, error: 'verification-failed' };
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const missingTokenResponse = await fetch(`${baseUrl}/api/subscribers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      email: 'turnstile@example.com',
+      source: 'test-suite',
+      company: ''
+    })
+  });
+  assert.equal(missingTokenResponse.status, 400);
+  assert.match((await missingTokenResponse.json()).error, /security check/i);
+
+  const invalidTokenResponse = await fetch(`${baseUrl}/api/subscribers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      email: 'turnstile@example.com',
+      source: 'test-suite',
+      company: '',
+      turnstileToken: 'bad-token'
+    })
+  });
+  assert.equal(invalidTokenResponse.status, 400);
+  assert.match((await invalidTokenResponse.json()).error, /security check failed/i);
+
+  const validTokenResponse = await fetch(`${baseUrl}/api/subscribers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      email: 'turnstile@example.com',
+      source: 'test-suite',
+      company: '',
+      turnstileToken: 'valid-token'
+    })
+  });
+  assert.equal(validTokenResponse.status, 201);
+});
+
+test('turnstile verification outage returns 503 for inquiry API', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    turnstile: {
+      siteKey: 'site-key',
+      secretKey: 'secret-key'
+    },
+    turnstileVerifier: async () => ({
+      ok: false,
+      error: 'verification-unavailable'
+    })
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/api/inquiries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'Turnstile Outage',
+      email: 'outage@example.com',
+      company: 'Quiet Capital',
+      message: 'Security verification should fail closed in this test.',
+      source: 'test-suite',
+      website: '',
+      turnstileToken: 'any-token'
+    })
+  });
+
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error, /temporarily unavailable/i);
+});
+
+test('runtime config endpoint exposes turnstile site key when enabled', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    turnstile: {
+      siteKey: 'site-key-public',
+      secretKey: 'secret-key'
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/api/runtime-config`, {
+    headers: { Accept: 'application/json' }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.turnstileSiteKey, 'site-key-public');
+});
+
 test('app supports async database adapters for Supabase/Postgres', async (t) => {
   const database = {
     async ping() {},

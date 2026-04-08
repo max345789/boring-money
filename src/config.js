@@ -37,6 +37,10 @@ const envSchema = z.object({
   DATABASE_URL: z.string().optional(),
   SQLITE_PATH: z.string().optional(),
   TRUST_PROXY: z.string().optional(),
+  TURNSTILE_SITE_KEY: z.string().min(1).optional(),
+  TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
   ADMIN_USERNAME: z.string().min(1).optional(),
   ADMIN_PASSWORD: z.string().min(1).optional(),
   NOTIFY_EMAIL: z.string().email().optional(),
@@ -46,6 +50,17 @@ const envSchema = z.object({
   SMTP_SECURE: z.string().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional()
+}).superRefine((value, ctx) => {
+  const hasTurnstileSiteKey = Boolean(value.TURNSTILE_SITE_KEY);
+  const hasTurnstileSecretKey = Boolean(value.TURNSTILE_SECRET_KEY);
+
+  if (hasTurnstileSiteKey !== hasTurnstileSecretKey) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['TURNSTILE_SITE_KEY'],
+      message: 'TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be provided together.'
+    });
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -66,6 +81,20 @@ const config = {
   databaseUrl: env.DATABASE_URL || null,
   sqlitePath: env.SQLITE_PATH || path.join(process.cwd(), 'data', 'boring-money.db'),
   trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV === 'production' ? 1 : false),
+  turnstile:
+    env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY
+      ? {
+          siteKey: env.TURNSTILE_SITE_KEY,
+          secretKey: env.TURNSTILE_SECRET_KEY
+        }
+      : null,
+  sentry:
+    env.SENTRY_DSN
+      ? {
+          dsn: env.SENTRY_DSN,
+          tracesSampleRate: env.SENTRY_TRACES_SAMPLE_RATE ?? 0
+        }
+      : null,
   admin:
     env.ADMIN_USERNAME && env.ADMIN_PASSWORD
       ? {

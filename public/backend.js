@@ -1,4 +1,6 @@
 (function () {
+  let runtimeConfigPromise = null;
+
   const statusMessages = {
     success: { tone: 'success', message: 'Subscription confirmed. Your first issue is on the way.' },
     exists: { tone: 'info', message: 'You are already subscribed. We updated your details.' },
@@ -8,6 +10,48 @@
     'inquiry-invalid': { tone: 'error', message: 'Please complete the inquiry form and try again.' },
     'inquiry-rate-limited': { tone: 'error', message: 'Too many attempts right now. Please wait a minute and try again.' }
   };
+
+  function loadRuntimeConfig() {
+    if (!runtimeConfigPromise) {
+      runtimeConfigPromise = fetch('/api/runtime-config', {
+        headers: { Accept: 'application/json' }
+      })
+        .then((response) => (response.ok ? response.json() : {}))
+        .catch(() => ({}));
+    }
+
+    return runtimeConfigPromise;
+  }
+
+  function loadTurnstileScript() {
+    return new Promise((resolve, reject) => {
+      if (window.turnstile) {
+        resolve();
+        return;
+      }
+
+      const existing = document.querySelector('script[data-turnstile-loader="true"]');
+
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Turnstile failed to load.')), {
+          once: true
+        });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.dataset.turnstileLoader = 'true';
+      script.addEventListener('load', () => resolve(), { once: true });
+      script.addEventListener('error', () => reject(new Error('Turnstile failed to load.')), {
+        once: true
+      });
+      document.head.appendChild(script);
+    });
+  }
 
   function getFeedbackNode(form) {
     let node = form.nextElementSibling;
@@ -67,6 +111,10 @@
 
       showFeedback(form, 'success', body.message || 'Done.');
       form.reset();
+
+      if (window.turnstile && form.dataset.turnstileWidgetId) {
+        window.turnstile.reset(form.dataset.turnstileWidgetId);
+      }
     } catch (error) {
       showFeedback(form, 'error', error.message);
     } finally {
@@ -76,20 +124,73 @@
     }
   }
 
+  async function bindSecurityChecks(forms) {
+    const runtimeConfig = await loadRuntimeConfig();
+    const siteKey = runtimeConfig.turnstileSiteKey;
+
+    if (!siteKey) {
+      return;
+    }
+
+    await loadTurnstileScript();
+
+    forms.forEach((form) => {
+      const tokenInput = document.createElement('input');
+      tokenInput.type = 'hidden';
+      tokenInput.name = 'turnstileToken';
+      form.appendChild(tokenInput);
+
+      const widget = document.createElement('div');
+      widget.style.marginTop = '10px';
+      form.appendChild(widget);
+
+      const widgetId = window.turnstile.render(widget, {
+        sitekey: siteKey,
+        callback(token) {
+          tokenInput.value = token;
+        },
+        'expired-callback': function () {
+          tokenInput.value = '';
+        },
+        'error-callback': function () {
+          tokenInput.value = '';
+        }
+      });
+
+      form.dataset.turnstileWidgetId = String(widgetId);
+    });
+  }
+
   function bindAsyncForms() {
-    document.querySelectorAll('form.js-subscribe-form').forEach((form) => {
+    const subscribeForms = Array.from(document.querySelectorAll('form.js-subscribe-form'));
+    const inquiryForms = Array.from(document.querySelectorAll('form.js-inquiry-form'));
+    const forms = [...subscribeForms, ...inquiryForms];
+
+    subscribeForms.forEach((form) => {
       form.addEventListener('submit', (event) => {
         event.preventDefault();
         submitJson(form, '/api/subscribers');
       });
     });
 
-    document.querySelectorAll('form.js-inquiry-form').forEach((form) => {
+    inquiryForms.forEach((form) => {
       form.addEventListener('submit', (event) => {
         event.preventDefault();
         submitJson(form, '/api/inquiries');
       });
     });
+
+    if (forms.length > 0) {
+      bindSecurityChecks(forms).catch(() => {
+        forms.forEach((form) => {
+          showFeedback(
+            form,
+            'error',
+            'Security checks failed to load. Please refresh and try again.'
+          );
+        });
+      });
+    }
   }
 
   function showRedirectStatus() {

@@ -8,6 +8,7 @@ const { z } = require('zod');
 
 const { createDatabase } = require('./db');
 const { createNotifier } = require('./notifier');
+const { verifyTurnstileToken } = require('./turnstile');
 const {
   site,
   findIssueBySlug,
@@ -188,6 +189,9 @@ function createApp(options = {}) {
   const app = express();
   const projectRoot = options.projectRoot || path.resolve(__dirname, '..');
   const sendFileOptions = { dotfiles: 'allow' };
+  const turnstileConfig = options.turnstile || null;
+  const turnstileVerifier = options.turnstileVerifier || verifyTurnstileToken;
+  const monitoring = options.monitoring || null;
   const database =
     options.database ||
     createDatabase({
@@ -215,11 +219,12 @@ function createApp(options = {}) {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
+          scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:'],
-          connectSrc: ["'self'"],
+          connectSrc: ["'self'", 'https://challenges.cloudflare.com'],
+          frameSrc: ["'self'", 'https://challenges.cloudflare.com'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
           formAction: ["'self'"],
@@ -270,6 +275,48 @@ function createApp(options = {}) {
     handler: createRateLimitHandler({ redirectTo: '/advertise.html?status=inquiry-rate-limited' })
   });
 
+  async function verifyBotCheck(payload, remoteIp) {
+    if (!turnstileConfig?.secretKey) {
+      return { ok: true };
+    }
+
+    const token =
+      payload?.turnstileToken ||
+      payload?.['cf-turnstile-response'] ||
+      '';
+    const verification = await turnstileVerifier({
+      secretKey: turnstileConfig.secretKey,
+      token: String(token),
+      remoteIp
+    });
+
+    if (verification.ok) {
+      return { ok: true };
+    }
+
+    if (verification.error === 'missing-token') {
+      return {
+        ok: false,
+        statusCode: 400,
+        error: 'Please complete the security check and try again.'
+      };
+    }
+
+    if (verification.error === 'verification-unavailable') {
+      return {
+        ok: false,
+        statusCode: 503,
+        error: 'Security verification is temporarily unavailable. Please try again shortly.'
+      };
+    }
+
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'Security check failed. Please refresh and try again.'
+    };
+  }
+
   function parseSubscriberInput(payload) {
     const parsed = subscriberSchema.safeParse(payload);
     if (!parsed.success) {
@@ -285,7 +332,12 @@ function createApp(options = {}) {
     };
   }
 
-  async function handleSubscription(payload) {
+  async function handleSubscription(payload, req) {
+    const verification = await verifyBotCheck(payload, req.ip);
+    if (!verification.ok) {
+      return verification;
+    }
+
     const parsed = parseSubscriberInput(payload);
     if (!parsed.ok) {
       return {
@@ -312,7 +364,12 @@ function createApp(options = {}) {
     };
   }
 
-  async function handleInquiry(payload) {
+  async function handleInquiry(payload, req) {
+    const verification = await verifyBotCheck(payload, req.ip);
+    if (!verification.ok) {
+      return verification;
+    }
+
     const parsed = inquirySchema.safeParse(payload);
 
     if (!parsed.success) {
@@ -488,6 +545,12 @@ function createApp(options = {}) {
     });
   });
 
+  app.get('/api/runtime-config', (req, res) => {
+    res.json({
+      turnstileSiteKey: turnstileConfig?.siteKey || null
+    });
+  });
+
   app.get('/ready', async (req, res) => {
     await database.ping();
 
@@ -560,7 +623,7 @@ function createApp(options = {}) {
   });
 
   app.post('/api/subscribers', subscribeLimiter, async (req, res) => {
-    const result = await handleSubscription(req.body);
+    const result = await handleSubscription(req.body, req);
 
     if (!result.ok) {
       res.status(result.statusCode).json({ error: result.error });
@@ -580,7 +643,7 @@ function createApp(options = {}) {
   });
 
   app.post('/api/inquiries', inquiryLimiter, async (req, res) => {
-    const result = await handleInquiry(req.body);
+    const result = await handleInquiry(req.body, req);
 
     if (!result.ok) {
       res.status(result.statusCode).json({ error: result.error });
@@ -598,7 +661,7 @@ function createApp(options = {}) {
   });
 
   app.post('/subscribe', subscribeLimiter, async (req, res) => {
-    const result = await handleSubscription(req.body);
+    const result = await handleSubscription(req.body, req);
 
     if (!result.ok) {
       res.redirect('/subscribe?status=invalid');
@@ -613,7 +676,7 @@ function createApp(options = {}) {
   });
 
   app.post('/inquiries', inquiryLimiter, async (req, res) => {
-    const result = await handleInquiry(req.body);
+    const result = await handleInquiry(req.body, req);
 
     if (!result.ok) {
       res.redirect('/advertise.html?status=inquiry-invalid');
@@ -635,6 +698,15 @@ function createApp(options = {}) {
     if (res.headersSent) {
       next(error);
       return;
+    }
+
+    if (monitoring?.enabled) {
+      monitoring.captureException(error, {
+        tags: {
+          path: req.path,
+          method: req.method
+        }
+      });
     }
 
     console.error(error);

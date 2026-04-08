@@ -17,6 +17,14 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      - key: TURNSTILE_SITE_KEY
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        sync: false
       - key: NOTIFY_EMAIL
         sync: false
       - key: FROM_EMAIL
