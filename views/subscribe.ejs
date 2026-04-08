@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: `Subscribe | ${site.name}`,
+    pageDescription: 'Subscribe to BoringMoney for weekly deep dives on cash-flowing businesses.'
+  }) %>
+</head>
+<body class="page">
+  <div class="page-frame"></div>
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="section section--narrow subscribe-shell">
+      <p class="eyebrow">Subscribe</p>
+      <h1 class="page-title">Join the quiet economy.</h1>
+      <p class="lede">One free issue every week. The goal is straightforward: better business judgment and no wasted attention.</p>
+
+      <div class="subscribe-card">
+        <%- include('partials/newsletter-form', {
+          source: 'subscribe-page',
+          submitLabel: 'Complete subscription',
+          showFirstName: true,
+          showFeedback: true
+        }) %>
+        <p class="microcopy">Free forever. We never sell your data.</p>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

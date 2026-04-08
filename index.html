@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoringMoney — The Business of Boring</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="/vendor/matter.min.js" defer></script>
+<style>
+  :root {
+    --black: #080808;
+    --off-white: #f5f3ef;
+    --warm-grey: #8a8a7c;
+    --mid-grey: #b5b1a5;
+    --accent: #2a2a2a;
+    --rule: rgba(0,0,0,0.1);
+    --ink: #111111;
+  }
+ 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+ 
+  body {
+    background: var(--off-white);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    position: relative;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Add subtle premium noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+  }
+  
+  /* Background physics canvas */
+  #physics-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.8;
+  }
+ 
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(245, 243, 239, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 48px;
+    height: 70px;
+  }
+ 
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--black);
+    text-decoration: none;
+    position: relative;
+    z-index: 20;
+  }
+  .nav-logo span { font-style: italic; font-weight: 400; }
+ 
+  .nav-links { display: flex; gap: 36px; list-style: none; position: relative; z-index: 20;}
+  .nav-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warm-grey);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--black); }
+ 
+  .nav-cta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--black);
+    color: var(--off-white);
+    border: none;
+    padding: 14px 28px;
+    cursor: pointer;
+    border-radius: 40px;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+    position: relative;
+    z-index: 20;
+  }
+  .nav-cta:hover { 
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+ 
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 70px;
+    position: relative;
+  }
+  .hero-left {
+    padding: 100px 48px 100px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--rule);
+    opacity: 0;
+    animation: fadeUp 0.9s ease forwards 0.2s;
+    position: relative;
+    z-index: 20;
+  }
+  
+  .hero-issue {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--warm-grey);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-issue::before { content: ''; display: block; width: 24px; height: 1px; background: var(--warm-grey); }
+ 
+  .hero-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 5.5vw, 96px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    color: var(--black);
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .hero-headline em { font-style: italic; font-weight: 400; color: #a38c4d; }
+ 
+  .hero-sub {
+    font-size: 17px; line-height: 1.7; color: var(--warm-grey); max-width: 440px; margin-bottom: 48px; font-weight: 400;
+  }
+ 
+  .subscribe-form { display: flex; gap: 0; max-width: 440px; border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+  .subscribe-form input {
+    flex: 1; padding: 20px 24px; border: 1px solid var(--rule); border-right: none; background: white;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--ink); outline: none; transition: border-color 0.3s;
+  }
+  .subscribe-form input:focus { border-color: var(--black); border-width: 1px;}
+  .subscribe-form button {
+    padding: 20px 32px; background: var(--black); color: var(--off-white); border: none; font-family: 'DM Mono', monospace;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; white-space: nowrap; transition: opacity 0.3s;
+  }
+  .subscribe-form button:hover { opacity: 0.8; }
+ 
+  .hero-note { margin-top: 16px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--warm-grey); letter-spacing: 0.04em; }
+ 
+  .hero-right {
+    padding: 100px 64px;
+    display: flex; flex-direction: column; justify-content: center;
+    opacity: 0; animation: fadeUp 0.9s ease forwards 0.4s;
+    position: relative; z-index: 20;
+    background: rgba(245, 243, 239, 0.4);
+    backdrop-filter: blur(10px);
+  }
+ 
+  .hero-stat-block { display: flex; flex-direction: column; gap: 48px; }
+  .stat-item { padding-bottom: 48px; border-bottom: 1px solid var(--rule); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .stat-item:hover { transform: translateX(10px); }
+  .stat-item:last-child { border-bottom: none; padding-bottom: 0; }
+ 
+  .stat-number { font-family: 'Playfair Display', serif; font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; color: var(--black); margin-bottom: 12px; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 12px; }
+  .stat-desc { font-size: 15px; line-height: 1.6; color: var(--warm-grey); max-width: 360px; }
+ 
+  /* TICKER */
+  .ticker {
+    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 18px 0; overflow: hidden; background: var(--black); position: relative; z-index: 20;
+  }
+  .ticker-inner { display: flex; align-items: center; gap: 60px; animation: ticker 40s linear infinite; white-space: nowrap; width: max-content;}
+  .ticker-item { font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--off-white); opacity: 0.6; transition: opacity 0.3s; cursor: default; }
+  .ticker-item:hover { opacity: 1; }
+  .ticker-item.highlight { opacity: 1; color: #d6ca9a; }
+  @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+ 
+  /* SECTIONS */
+  section { padding: 120px 48px; position: relative; z-index: 20; }
+  .section-label {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--warm-grey); margin-bottom: 64px; display: flex; align-items: center; gap: 24px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+ 
+  /* WHAT WE COVER */
+  .what { border-top: 1px solid var(--rule); background: rgba(245, 243, 239, 0.9); }
+  .what-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--rule); border-bottom: none; border-right: none;}
+  .what-card {
+    padding: 48px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: transparent; transition: background 0.4s ease, transform 0.4s ease;
+  }
+  .what-card:hover { background: white; transform: scale(1.02); z-index: 2; position: relative;}
+  .what-card-num { font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 700; color: #dcd8cd; line-height: 1; margin-bottom: 32px; transition: color 0.3s; }
+  .what-card:hover .what-card-num { color: #a38c4d; }
+  .what-card-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--black); margin-bottom: 16px; line-height: 1.2; }
+  .what-card-desc { font-size: 15px; line-height: 1.7; color: var(--warm-grey); }
+ 
+  /* FEATURED ISSUE */
+  .featured {
+    background: var(--black); color: var(--off-white); border-top: none;
+  }
+  .featured .section-label { color: rgba(244,241,235,0.5); }
+  .featured .section-label::after { background: rgba(244,241,235,0.15); }
+  .featured-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 80px; align-items: center; }
+  .featured-headline { font-family: 'Playfair Display', serif; font-size: clamp(40px, 4.5vw, 64px); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 24px; }
+  .featured-headline em { font-style: italic; font-weight: 400; color: #d6ca9a; }
+  .featured-body { font-size: 18px; line-height: 1.75; color: rgba(244,241,235,0.7); margin-bottom: 40px; }
+  .featured-read {
+    display: inline-flex; align-items: center; gap: 12px; font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--off-white); text-decoration: none; border-bottom: 1px solid rgba(244,241,235,0.4); padding-bottom: 6px; transition: border-color 0.3s, gap 0.3s;
+  }
+  .featured-read:hover { border-color: #d6ca9a; gap: 16px; color: #d6ca9a;}
+  .featured-read::after { content: '→'; }
+ 
+  .featured-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(244,241,235,0.1); border: 1px solid rgba(244,241,235,0.1); }
+  .metric { padding: 40px; background: var(--black); transition: background 0.3s;}
+  .metric:hover { background: #111; }
+  .metric-val { font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 700; color: #d6ca9a; line-height: 1; margin-bottom: 12px; }
+  .metric-key { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(244,241,235,0.5); }
+ 
+  /* HOW IT WORKS */
+  .how { border-top: 1px solid var(--rule); background: var(--off-white); }
+  .how-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  .how-step { padding: 48px; border-right: 1px solid var(--rule); transition: transform 0.3s;}
+  .how-step:hover { transform: translateY(-10px); background: #fff; box-shadow: 0 20px 40px rgba(0,0,0,0.03);}
+  .how-step:last-child { border-right: none; }
+  .how-step-num { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; color: var(--warm-grey); margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+  .how-step-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--black); margin-bottom: 16px; line-height: 1.2; }
+  .how-step-desc { font-size: 15px; line-height: 1.7; color: var(--warm-grey); }
+ 
+  /* BUSINESSES */
+  .businesses { border-top: 1px solid var(--rule); background: #ebe8e1; }
+  .biz-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
+  .biz-item {
+    padding: 40px 0; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: padding-left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .biz-item:nth-child(odd) { padding-right: 64px; border-right: 1px solid var(--rule); }
+  .biz-item:nth-child(even) { padding-left: 64px; }
+  .biz-item:hover { padding-left: 20px; }
+  .biz-item:nth-child(even):hover { padding-left: 84px; }
+  .biz-name { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--black); }
+  .biz-tag { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--black); background: white; padding: 6px 14px; border: 1px solid var(--rule); border-radius: 40px; }
+ 
+  /* PAGES SECTION */
+  .pages { border-top: 1px solid var(--rule); background: var(--off-white); }
+  .pages-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--rule); border: 1px solid var(--rule); }
+  .page-card { padding: 48px; background: var(--off-white); transition: background 0.3s; }
+  .page-card:hover { background: #fff; }
+  .page-url { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--warm-grey); margin-bottom: 20px; display: block; border-bottom: 1px solid var(--rule); padding-bottom: 10px; }
+  .page-name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--black); margin-bottom: 12px; line-height: 1.2; }
+  .page-desc { font-size: 14px; line-height: 1.65; color: var(--warm-grey); }
+ 
+  /* MANIFESTO */
+  .manifesto { border-top: 1px solid var(--rule); background: var(--black); text-align: center; padding: 160px 48px; position: relative; overflow: hidden; }
+  .manifesto::after { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background: radial-gradient(circle at center, rgba(214,202,154,0.05) 0%, transparent 60%); z-index:0; }
+  .manifesto-quote { font-family: 'Playfair Display', serif; font-size: clamp(32px, 4vw, 56px); font-weight: 400; font-style: italic; color: #d6ca9a; line-height: 1.3; max-width: 900px; margin: 0 auto 32px; letter-spacing: -0.01em; position:relative; z-index:1; }
+  .manifesto-attr { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(244,241,235,0.4); position:relative; z-index:1; }
+ 
+  /* FINAL CTA */
+  .final-cta { border-top: 1px solid var(--rule); padding: 120px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; background: #fff;}
+  .final-cta-left h2 { font-family: 'Playfair Display', serif; font-size: clamp(40px, 4.5vw, 68px); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em; color: var(--black); }
+  .final-cta-left h2 em { font-style: italic; font-weight: 400; color: #a38c4d;}
+  .final-cta-right p { font-size: 18px; line-height: 1.75; color: var(--warm-grey); margin-bottom: 40px; }
+ 
+  /* FOOTER */
+  footer { border-top: 1px solid var(--rule); padding: 48px; display: flex; justify-content: space-between; align-items: center; background: var(--off-white); }
+  .footer-logo { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--black); }
+  .footer-logo span { font-style: italic; font-weight: 400; }
+  .footer-links { display: flex; gap: 32px; list-style: none; }
+  .footer-links a { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-grey); text-decoration: none; transition: color 0.3s; }
+  .footer-links a:hover { color: var(--black); }
+  .footer-copy { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--mid-grey); }
+ 
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* HAMBURGER */
+  .hamburger {
+    display: none; cursor: pointer; background: none; border: none; padding: 8px;
+    flex-direction: column; gap: 5px; z-index: 200;
+  }
+  .hamburger span {
+    display: block; width: 24px; height: 2px; background: var(--black);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+  .hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .mobile-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(245, 243, 239, 0.97); backdrop-filter: blur(20px);
+    z-index: 99; flex-direction: column; justify-content: center; align-items: center; gap: 32px;
+  }
+  .mobile-overlay.active { display: flex; }
+  .mobile-overlay a {
+    font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700;
+    color: var(--black); text-decoration: none; transition: color 0.3s;
+  }
+  .mobile-overlay a:hover { color: #a38c4d; }
+  .mobile-overlay .mob-cta {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase; background: var(--black); color: var(--off-white);
+    padding: 16px 36px; border-radius: 40px; text-decoration: none; margin-top: 16px;
+  }
+
+  /* TABLET */
+  @media (max-width: 1024px) {
+    nav { padding: 0 32px; }
+    .nav-links { gap: 20px; }
+    .nav-links a { font-size: 10px; }
+    .nav-cta { padding: 12px 20px; font-size: 10px; }
+    .hero-left { padding: 80px 32px; }
+    .hero-right { padding: 80px 32px; }
+    section { padding: 80px 32px; }
+    .what-grid { grid-template-columns: repeat(2, 1fr); }
+    .how-steps { grid-template-columns: repeat(2, 1fr); }
+    .how-step:nth-child(2) { border-right: none; }
+    .how-step:nth-child(3) { border-right: 1px solid var(--rule); }
+    .stat-number { font-size: 48px; }
+    .featured-grid { gap: 48px; }
+    .featured-headline { font-size: clamp(28px, 3.5vw, 48px); }
+    .biz-item:nth-child(odd) { padding-right: 32px; }
+    .biz-item:nth-child(even) { padding-left: 32px; }
+    footer { padding: 32px; }
+    .footer-links { gap: 20px; }
+  }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .hamburger { display: flex; }
+    .nav-links { display: none !important; }
+    .nav-cta { display: none !important; }
+    nav { padding: 0 20px; height: 60px; }
+
+    #physics-canvas { display: none; }
+
+    .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 60px; }
+    .hero-left { padding: 48px 20px; border-right: none; }
+    .hero-headline { font-size: clamp(40px, 10vw, 56px); }
+    .hero-sub { font-size: 15px; max-width: 100%; }
+    .hero-right { padding: 32px 20px; }
+    .stat-number { font-size: 48px; }
+    .hero-stat-block { gap: 32px; }
+    .stat-item { padding-bottom: 32px; }
+
+    .subscribe-form { flex-direction: column; max-width: 100%; }
+    .subscribe-form input { border-right: 1px solid var(--rule); border-bottom: none; }
+
+    .ticker-item { font-size: 10px; letter-spacing: 0.08em; }
+
+    section { padding: 64px 20px; }
+    .section-label { font-size: 10px; margin-bottom: 40px; }
+
+    .what-grid { grid-template-columns: 1fr; border: none; }
+    .what-card { border-right: none; }
+    .what-card-num { font-size: 36px; margin-bottom: 20px; }
+
+    .featured-grid { grid-template-columns: 1fr; gap: 40px; }
+    .featured-metrics { grid-template-columns: 1fr; }
+    .featured-headline { font-size: clamp(28px, 7vw, 40px); }
+    .featured-body { font-size: 15px; }
+    .metric { padding: 28px; }
+    .metric-val { font-size: 32px; }
+
+    .how-steps { grid-template-columns: 1fr; }
+    .how-step { border-right: none; border-bottom: 1px solid var(--rule); }
+    .how-step:last-child { border-bottom: none; }
+
+    .biz-list { grid-template-columns: 1fr; }
+    .biz-item { padding: 24px 0 !important; }
+    .biz-item:nth-child(odd) { border-right: none; padding-right: 0; }
+    .biz-item:nth-child(even) { padding-left: 0 !important; }
+    .biz-item:hover { padding-left: 12px !important; }
+    .biz-name { font-size: 20px; }
+
+    .pages-grid { grid-template-columns: 1fr; gap: 2px; }
+
+    .manifesto { padding: 80px 20px; }
+    .manifesto-quote { font-size: clamp(22px, 5vw, 36px); }
+
+    .final-cta { grid-template-columns: 1fr; gap: 32px; padding: 64px 20px; }
+    .final-cta-left h2 { font-size: clamp(28px, 7vw, 44px); }
+    .final-cta-right p { font-size: 15px; margin-bottom: 24px; }
+
+    footer { flex-direction: column; gap: 20px; text-align: center; padding: 32px 20px; }
+    .footer-links { flex-wrap: wrap; justify-content: center; gap: 16px; }
+  }
+
+  /* SMALL PHONES */
+  @media (max-width: 400px) {
+    nav { padding: 0 16px; }
+    .hero-left { padding: 40px 16px; }
+    .hero-right { padding: 24px 16px; }
+    .hero-headline { font-size: 36px; }
+    section { padding: 48px 16px; }
+    .manifesto { padding: 64px 16px; }
+    .final-cta { padding: 48px 16px; }
+    footer { padding: 24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Canvas for Matter.js Physics -->
+<canvas id="physics-canvas"></canvas>
+ 
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Boring<span>Money</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="issues.html">Issues</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="playbooks.html">Playbooks</a></li>
+    <li><a href="community.html">Community</a></li>
+  </ul>
+  <a href="subscribe.html" class="nav-cta" style="text-decoration:none;">Subscribe — Free</a>
+</nav>
+ 
+<!-- HERO -->
+<section class="hero" style="padding:0; border:none;">
+  <div class="hero-left">
+    <div class="hero-issue">Weekly Newsletter · Est. 2025</div>
+    <h1 class="hero-headline">The <em>boring</em><br>businesses<br>that win.</h1>
+    <p class="hero-sub">Every week we tear apart one unglamorous, cash-flowing business — the real numbers, the real margins, the real operators. No hype. No pitch decks.</p>
+    <form class="subscribe-form js-subscribe-form" action="/subscribe" method="post" data-source="home-hero">
+      <input type="hidden" name="source" value="home-hero">
+      <input type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;">
+      <input type="email" name="email" placeholder="your@email.com" autocomplete="email" required>
+      <button type="submit">Join Free</button>
+    </form>
+    <p class="hero-note">Free forever · One email per week · No spam</p>
+  </div>
+  <div class="hero-right">
+    <div class="hero-stat-block">
+      <div class="stat-item">
+        <div class="stat-number">$340k</div>
+        <div class="stat-label">Dennis earns annually</div>
+        <div class="stat-desc">Four car washes. 20 hours a week. Zero venture capital. Zero press coverage.</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">52</div>
+        <div class="stat-label">Deep-dives per year</div>
+        <div class="stat-desc">One boring business, fully dissected every single week. Margins, operators, risks, opportunity.</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">$0</div>
+        <div class="stat-label">To start reading</div>
+        <div class="stat-desc">Free to subscribe. The knowledge is the product.</div>
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-item highlight">Car Washes</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">Vending Routes</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item highlight">Storage Units</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">Laundromats</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item highlight">Parking Lots</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">ATM Networks</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item highlight">Pool Cleaning</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">Junk Removal</span>
+    <!-- Repeat for seamless scroll -->
+    <span class="ticker-item highlight">Car Washes</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">Vending Routes</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item highlight">Storage Units</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">Laundromats</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item highlight">Parking Lots</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">ATM Networks</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item highlight">Pool Cleaning</span>
+    <span class="ticker-item">·</span>
+    <span class="ticker-item">Junk Removal</span>
+  </div>
+</div>
+ 
+<!-- WHAT WE COVER -->
+<section class="what" id="about">
+  <div class="section-label">What We Cover</div>
+  <div class="what-grid">
+    <div class="what-card">
+      <div class="what-card-num">01</div>
+      <div class="what-card-title">Real Numbers</div>
+      <div class="what-card-desc">Startup costs, monthly revenue, net margins, break-even timelines. Every issue goes deep into the actual economics — not the optimistic version, the real one.</div>
+    </div>
+    <div class="what-card">
+      <div class="what-card-num">02</div>
+      <div class="what-card-title">Operator Interviews</div>
+      <div class="what-card-desc">We talk to the people who actually own these businesses. The plumbers. The vending route operators. The car wash families. Their knowledge has never been covered before.</div>
+    </div>
+    <div class="what-card">
+      <div class="what-card-num">03</div>
+      <div class="what-card-title">The Boring Score</div>
+      <div class="what-card-desc">Our signature framework. Every business rated across five criteria — effort, capital, income ceiling, recession resistance, and exit potential.</div>
+    </div>
+    <div class="what-card">
+      <div class="what-card-num">04</div>
+      <div class="what-card-title">Honest Risks</div>
+      <div class="what-card-desc">Every deep-dive includes what goes wrong. The competition risk, the capital risk, the operator risk. No glossing over the hard parts.</div>
+    </div>
+    <div class="what-card">
+      <div class="what-card-num">05</div>
+      <div class="what-card-title">The Acquisition Play</div>
+      <div class="what-card-desc">Why private equity quietly buys these businesses, how roll-ups work, and what an individual buyer needs to know before signing anything.</div>
+    </div>
+    <div class="what-card">
+      <div class="what-card-num">06</div>
+      <div class="what-card-title">The Bottom Line</div>
+      <div class="what-card-desc">Every issue ends the same way. Is this business worth owning? Who is it right for? What would a smart first step look like? Clear, direct, no hedge.</div>
+    </div>
+  </div>
+</section>
+ 
+<!-- FEATURED ISSUE -->
+<section class="featured" id="issues">
+  <div class="section-label">Latest Issue</div>
+  <div class="featured-grid">
+    <div>
+      <h2 class="featured-headline">How much does a <em>car wash</em> actually make?</h2>
+      <p class="featured-body">The car wash is one of the most misunderstood businesses in the world. From outside, it looks like a commodity — a shed with brushes and soap. From inside, it's a cash flow machine with a subscription model the SaaS world would recognise immediately.</p>
+      <a href="issue-carwash.html" class="featured-read">Read Issue #1</a>
+    </div>
+    <div class="featured-metrics">
+      <div class="metric">
+        <div class="metric-val">$80k–$150k</div>
+        <div class="metric-key">Monthly Revenue · Single Site</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">60–70%</div>
+        <div class="metric-key">Revenue on Subscription</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">$1.50–$3</div>
+        <div class="metric-key">Variable Cost Per Car</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">$30k–$80k</div>
+        <div class="metric-key">Net Profit Per Month</div>
+      </div>
+    </div>
+  </div>
+</section>
+ 
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="section-label">How It Works</div>
+  <div class="how-steps">
+    <div class="how-step">
+      <div class="how-step-num">Step 01</div>
+      <div class="how-step-title">We pick one business</div>
+      <div class="how-step-desc">Every week, one unglamorous business gets the full treatment. Car washes, storage units, vending routes, parking lots.</div>
+    </div>
+    <div class="how-step">
+      <div class="how-step-num">Step 02</div>
+      <div class="how-step-title">We tear it apart</div>
+      <div class="how-step-desc">Real startup costs, real margins, real operator interviews. No fluff, no optimism bias, no venture capital fairy tales.</div>
+    </div>
+    <div class="how-step">
+      <div class="how-step-num">Step 03</div>
+      <div class="how-step-title">You get smarter</div>
+      <div class="how-step-desc">Every issue lands in your inbox. Read it in 8 minutes. Understand a business most people drive past without thinking about.</div>
+    </div>
+    <div class="how-step">
+      <div class="how-step-num">Step 04</div>
+      <div class="how-step-title">You decide what to do</div>
+      <div class="how-step-desc">Buy a business. Invest differently. Just understand the world better. The knowledge is yours, forever, for free.</div>
+    </div>
+  </div>
+</section>
+ 
+<!-- BUSINESSES -->
+<section class="businesses" id="businesses">
+  <div class="section-label">Businesses We've Covered & Coming Soon</div>
+  <div class="biz-list">
+    <div class="biz-item"><span class="biz-name">Car Washes</span><span class="biz-tag">Issue #1</span></div>
+    <div class="biz-item"><span class="biz-name">Vending Routes</span><span class="biz-tag">Issue #2</span></div>
+    <div class="biz-item"><span class="biz-name">Storage Units</span><span class="biz-tag">Coming</span></div>
+    <div class="biz-item"><span class="biz-name">Laundromats</span><span class="biz-tag">Coming</span></div>
+    <div class="biz-item"><span class="biz-name">Parking Lots</span><span class="biz-tag">Coming</span></div>
+    <div class="biz-item"><span class="biz-name">ATM Networks</span><span class="biz-tag">Coming</span></div>
+    <div class="biz-item"><span class="biz-name">Pool Cleaning</span><span class="biz-tag">Coming</span></div>
+    <div class="biz-item"><span class="biz-name">Junk Removal</span><span class="biz-tag">Coming</span></div>
+  </div>
+</section>
+ 
+<!-- PAGES -->
+<section class="pages" id="pages">
+  <div class="section-label">All Pages On This Site</div>
+  <div class="pages-grid">
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/</span>
+      <div class="page-name">Home</div>
+      <div class="page-desc">The landing page. Explains what BoringMoney is, why it exists, and converts visitors into subscribers. The one page that does all the heavy lifting.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/issues</span>
+      <div class="page-name">All Issues</div>
+      <div class="page-desc">A full archive of every deep-dive published. Browsable by business type, industry, capital required, and the Boring Score rating.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/issue/[slug]</span>
+      <div class="page-name">Issue Page</div>
+      <div class="page-desc">Each individual deep-dive as a standalone article page. Shareable, SEO-optimised, with the full breakdown and the Boring Score at the bottom.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/about</span>
+      <div class="page-name">About</div>
+      <div class="page-desc">The manifesto. Who writes this, why boring beats sexy, and what the newsletter is trying to do in the world. The trust-building page.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/boring-score</span>
+      <div class="page-name">The Boring Score</div>
+      <div class="page-desc">The signature rating framework explained in full. Every business rated across effort, capital, income ceiling, recession resistance, and exit potential.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/playbooks</span>
+      <div class="page-name">Playbooks</div>
+      <div class="page-desc">Paid deep-dive guides for serious buyers. "The Car Wash Buyer's Guide", "How to Build a Vending Route" — actionable, detailed, worth every rupee.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/marketplace</span>
+      <div class="page-name">Marketplace</div>
+      <div class="page-desc">Curated boring businesses listed for sale. The long-game page — where audience buying intent converts into real transactions. Coming in Phase 2.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/community</span>
+      <div class="page-name">Community</div>
+      <div class="page-desc">Paid membership for serious operators and buyers. Deal flow, operator AMAs, financial model templates, and direct access to the BoringMoney network.</div>
+    </div>
+    <div class="page-card">
+      <span class="page-url">boringmoney.co/advertise</span>
+      <div class="page-name">Advertise</div>
+      <div class="page-desc">For companies that want to reach an audience of small business owners, operators, and buyers. Sponsorship rates, audience data, and booking.</div>
+    </div>
+  </div>
+</section>
+ 
+<!-- MANIFESTO PULLQUOTE -->
+<section class="manifesto">
+  <p class="manifesto-quote">"A guy named Dennis in Fresno owns four car washes, works 20 hours a week, and clears $340,000 a year. Nobody writes about Dennis. This newsletter is about Dennis."</p>
+  <p class="manifesto-attr">— BoringMoney Founding Manifesto</p>
+</section>
+ 
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <div class="final-cta-left">
+    <h2>Join the readers who understand the <em>quiet economy.</em></h2>
+  </div>
+  <div class="final-cta-right">
+    <p>One email per week. One boring business, fully dissected. The real numbers, the real margins, the real opportunity. Free forever.</p>
+    <form class="subscribe-form js-subscribe-form" action="/subscribe" method="post" data-source="home-final-cta">
+      <input type="hidden" name="source" value="home-final-cta">
+      <input type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;">
+      <input type="email" name="email" placeholder="your@email.com" autocomplete="email" required>
+      <button type="submit">Subscribe Free</button>
+    </form>
+  </div>
+</section>
+ 
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Boring<span>Money</span></div>
+  <ul class="footer-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="issues.html">Issues</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="playbooks.html">Playbooks</a></li>
+    <li><a href="community.html">Community</a></li>
+    <li><a href="advertise.html">Advertise</a></li>
+  </ul>
+  <span class="footer-copy">© 2025 BoringMoney</span>
+</footer>
+ 
+<script src="/home.js"></script>
+<script src="/backend.js"></script>
+</body>
+</html>

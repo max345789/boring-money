@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: `${issue.title} | ${site.name} Issue ${issue.number}`,
+    pageDescription: issue.summary
+  }) %>
+</head>
+<body class="page">
+  <div class="page-frame"></div>
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="section issue-hero">
+      <div class="issue-hero__copy">
+        <p class="eyebrow">Issue <%= issue.number %> · <%= issue.tag %></p>
+        <h1 class="page-title"><%= issue.title %></h1>
+        <p class="lede"><%= issue.deck %></p>
+        <p class="issue-quote"><%= issue.heroQuote %></p>
+      </div>
+
+      <aside class="issue-hero__rail">
+        <h2>Key metrics</h2>
+        <dl class="metric-list">
+          <% issue.metrics.forEach((metric) => { %>
+            <div class="metric-list__item">
+              <dt><%= metric.label %></dt>
+              <dd><%= metric.value %></dd>
+            </div>
+          <% }) %>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">What matters</p>
+        <h2>The practical takeaway for buyers and operators.</h2>
+      </div>
+
+      <ul class="bullet-list bullet-list--large">
+        <% issue.takeaways.forEach((takeaway) => { %>
+          <li><%= takeaway %></li>
+        <% }) %>
+      </ul>
+    </section>
+
+    <section class="section section--narrow">
+      <div class="issue-section-list">
+        <% issue.sections.forEach((section) => { %>
+          <article class="issue-section reveal-on-scroll">
+            <h2><%= section.heading %></h2>
+            <% section.paragraphs.forEach((paragraph) => { %>
+              <p><%= paragraph %></p>
+            <% }) %>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section section--contrast">
+      <div class="section-heading">
+        <p class="eyebrow">Stay in the loop</p>
+        <h2>Get the next issue in your inbox.</h2>
+      </div>
+
+      <%- include('partials/newsletter-form', {
+        source: `issue-${issue.slug}`,
+        submitLabel: 'Subscribe free',
+        showFeedback: false
+      }) %>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Related issues</p>
+        <h2>Keep reading.</h2>
+      </div>
+
+      <div class="issue-list">
+        <% relatedIssues.forEach((relatedIssue) => { %>
+          <article class="issue-row reveal-on-scroll">
+            <div class="issue-row__meta">
+              <span>Issue <%= relatedIssue.number %></span>
+              <span><%= relatedIssue.tag %></span>
+            </div>
+            <div class="issue-row__content">
+              <h3><a href="/issues/<%= relatedIssue.slug %>"><%= relatedIssue.title %></a></h3>
+              <p><%= relatedIssue.deck %></p>
+            </div>
+            <a class="issue-row__link" href="/issues/<%= relatedIssue.slug %>">Open</a>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

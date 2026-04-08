@@ -1,0 +1,27 @@
+<header class="site-header" data-nav>
+  <div class="site-header__inner">
+    <a class="brandmark" href="/" aria-label="<%= site.name %> home">
+      <span class="brandmark__name">Boring</span><span class="brandmark__accent">Money</span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="site-nav"
+      data-nav-toggle
+    >
+      Menu
+    </button>
+
+    <nav class="site-nav" id="site-nav" data-nav-panel>
+      <a href="/" class="<%= currentPath === '/' ? 'is-active' : '' %>">Home</a>
+      <a href="/about" class="<%= currentPath === '/about' ? 'is-active' : '' %>">About</a>
+      <a href="/issues" class="<%= currentPath.startsWith('/issues') ? 'is-active' : '' %>">Issues</a>
+      <a href="/playbooks" class="<%= currentPath === '/playbooks' ? 'is-active' : '' %>">Playbooks</a>
+      <a href="/community" class="<%= currentPath === '/community' ? 'is-active' : '' %>">Community</a>
+    </nav>
+
+    <a class="button button--quiet header-cta" href="/subscribe">Subscribe Free</a>
+  </div>
+</header>

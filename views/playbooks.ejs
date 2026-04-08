@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: `Playbooks | ${site.name}`,
+    pageDescription: 'Practical guides and models for buyers building conviction in boring businesses.'
+  }) %>
+</head>
+<body class="page">
+  <div class="page-frame"></div>
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="section">
+      <p class="eyebrow">Playbooks</p>
+      <h1 class="page-title">Operator-grade guides for deeper diligence.</h1>
+      <p class="lede">These are tactical add-ons built for buyers who need templates, checklists, and sharper underwriting context.</p>
+
+      <div class="playbook-list playbook-list--full">
+        <% playbooks.forEach((playbook) => { %>
+          <article class="playbook reveal-on-scroll <%= playbook.status === 'upcoming' ? 'playbook--muted' : '' %>">
+            <span class="pill"><%= playbook.label %></span>
+            <h2><%= playbook.title %></h2>
+            <p><%= playbook.summary %></p>
+            <div class="playbook__footer">
+              <strong><%= playbook.price %></strong>
+              <% if (playbook.status === 'available') { %>
+                <a href="/subscribe">Get access</a>
+              <% } else { %>
+                <span>Coming soon</span>
+              <% } %>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

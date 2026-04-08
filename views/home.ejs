@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: `${site.name} | ${site.shortDescription}`,
+    pageDescription: site.shortDescription
+  }) %>
+</head>
+<body class="page page--home">
+  <div class="page-frame"></div>
+  <%- include('partials/nav') %>
+
+  <main>
+    <section class="hero">
+      <div class="hero__copy">
+        <p class="eyebrow"><%= site.hero.eyebrow %></p>
+        <h1><%= site.hero.headline %></h1>
+        <p class="lede"><%= site.hero.body %></p>
+
+        <div class="hero__actions">
+          <a class="button button--primary" href="<%= site.hero.primaryCta.href %>"><%= site.hero.primaryCta.label %></a>
+          <a class="button button--secondary" href="<%= site.hero.secondaryCta.href %>"><%= site.hero.secondaryCta.label %></a>
+        </div>
+
+        <%- include('partials/newsletter-form', {
+          source: 'home-hero',
+          submitLabel: 'Join Free',
+          showFeedback: false,
+          variant: 'newsletter-form--inline'
+        }) %>
+
+        <p class="microcopy">One free issue per week. No spam. No finance-bro noise.</p>
+      </div>
+
+      <aside class="hero__rail">
+        <div class="hero__issue-label">Latest issue · <%= latestIssue.number %></div>
+        <h2><a href="/issues/<%= latestIssue.slug %>"><%= latestIssue.title %></a></h2>
+        <p class="hero__quote"><%= latestIssue.heroQuote %></p>
+
+        <dl class="metric-list">
+          <% latestIssue.metrics.forEach((metric) => { %>
+            <div class="metric-list__item reveal-on-scroll">
+              <dt><%= metric.label %></dt>
+              <dd><%= metric.value %></dd>
+            </div>
+          <% }) %>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Why it works</p>
+        <h2>One editorial product, three practical outcomes.</h2>
+      </div>
+
+      <div class="principles-grid">
+        <% site.principles.forEach((principle) => { %>
+          <article class="principle reveal-on-scroll">
+            <h3><%= principle.title %></h3>
+            <p><%= principle.body %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section section--contrast">
+      <div class="section-heading">
+        <p class="eyebrow">Featured issue</p>
+        <h2><%= latestIssue.title %> is the cover story right now.</h2>
+      </div>
+
+      <div class="feature-layout">
+        <div class="feature-layout__summary">
+          <p class="lede"><%= latestIssue.summary %></p>
+          <ul class="bullet-list">
+            <% latestIssue.takeaways.forEach((takeaway) => { %>
+              <li><%= takeaway %></li>
+            <% }) %>
+          </ul>
+          <a class="button button--secondary" href="/issues/<%= latestIssue.slug %>">Read the issue</a>
+        </div>
+
+        <div class="feature-layout__stats">
+          <% site.stats.forEach((stat) => { %>
+            <article class="stat-block reveal-on-scroll">
+              <strong
+                data-counter-value="<%= stat.value %>"
+                data-prefix="<%= stat.prefix || '' %>"
+                data-suffix="<%= stat.suffix || '' %>"
+              ><%= stat.prefix || '' %>0<%= stat.suffix || '' %></strong>
+              <span><%= stat.label %></span>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Archive</p>
+        <h2>Published issues and what is coming next.</h2>
+      </div>
+
+      <div class="issue-list">
+        <% publishedIssues.forEach((issue) => { %>
+          <article class="issue-row reveal-on-scroll">
+            <div class="issue-row__meta">
+              <span>Issue <%= issue.number %></span>
+              <span><%= issue.tag %></span>
+            </div>
+            <div class="issue-row__content">
+              <h3><a href="/issues/<%= issue.slug %>"><%= issue.title %></a></h3>
+              <p><%= issue.deck %></p>
+            </div>
+            <a class="issue-row__link" href="/issues/<%= issue.slug %>">Open</a>
+          </article>
+        <% }) %>
+
+        <% upcomingIssues.forEach((issue) => { %>
+          <article class="issue-row issue-row--muted reveal-on-scroll">
+            <div class="issue-row__meta">
+              <span>Issue <%= issue.number %></span>
+              <span><%= issue.tag %></span>
+            </div>
+            <div class="issue-row__content">
+              <h3><%= issue.title %></h3>
+              <p><%= issue.deck %></p>
+            </div>
+            <span class="issue-row__link issue-row__link--muted">Soon</span>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section section--contrast">
+      <div class="section-heading">
+        <p class="eyebrow">Premium add-on</p>
+        <h2>Playbooks for buyers who want operating detail, not inspiration.</h2>
+      </div>
+
+      <div class="playbook-list">
+        <% playbooks.forEach((playbook) => { %>
+          <article class="playbook reveal-on-scroll <%= playbook.status === 'upcoming' ? 'playbook--muted' : '' %>">
+            <span class="pill"><%= playbook.label %></span>
+            <h3><%= playbook.title %></h3>
+            <p><%= playbook.summary %></p>
+            <div class="playbook__footer">
+              <strong><%= playbook.price %></strong>
+              <% if (playbook.status === 'available') { %>
+                <a href="/subscribe">Get access</a>
+              <% } else { %>
+                <span>Coming soon</span>
+              <% } %>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section final-cta">
+      <div>
+        <p class="eyebrow">Join free</p>
+        <h2><%= site.finalCta.headline %></h2>
+        <p class="lede"><%= site.finalCta.body %></p>
+      </div>
+
+      <div class="final-cta__form">
+        <%- include('partials/newsletter-form', {
+          source: 'home-final-cta',
+          submitLabel: 'Subscribe free',
+          showFeedback: false
+        }) %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

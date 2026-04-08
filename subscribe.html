@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subscribe — BoringMoney</title>
+<meta name="description" content="Subscribe to BoringMoney. One email per week. One boring business, fully dissected. Free forever.">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<nav>
+  <a href="index.html" class="nav-logo">Boring<span>Money</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="issues.html">Issues</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="playbooks.html">Playbooks</a></li>
+    <li><a href="community.html">Community</a></li>
+  </ul>
+  <a href="subscribe.html" class="nav-cta">Subscribe — Free</a>
+</nav>
+
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 120px 48px;">
+  <div style="text-align: center; max-width: 560px;">
+    <h1 style="font-family:'Playfair Display',serif; font-size:clamp(36px,4vw,56px); font-weight:900; line-height:1.05; letter-spacing:-0.02em; color:var(--black); margin-bottom:24px;">Join the <em style="font-style:italic; font-weight:400; color:#a38c4d;">quiet economy.</em></h1>
+    <p style="font-size:18px; line-height:1.7; color:var(--warm-grey); margin-bottom:48px;">One email per week. One boring business, fully dissected. The real numbers, the real margins, the real opportunity. Free forever.</p>
+    <div style="max-width: 460px; margin: 0 auto;">
+      <form class="subscribe-form js-subscribe-form" action="/subscribe" method="post" data-source="subscribe-page" style="margin-bottom:16px;">
+        <input type="hidden" name="source" value="subscribe-page">
+        <input type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;">
+        <input type="email" name="email" placeholder="your@email.com" autocomplete="email" required>
+        <button type="submit">Subscribe Free</button>
+      </form>
+      <p style="font-family:'DM Mono',monospace; font-size:11px; color:var(--warm-grey); letter-spacing:0.04em;">Free forever · One email per week · No spam · Unsubscribe anytime</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Boring<span>Money</span></div>
+  <ul class="footer-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="issues.html">Issues</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="playbooks.html">Playbooks</a></li>
+    <li><a href="community.html">Community</a></li>
+    <li><a href="advertise.html">Advertise</a></li>
+  </ul>
+  <span class="footer-copy">© 2025 BoringMoney</span>
+</footer>
+<script src="protect.js"></script>
+<script src="/backend.js"></script>
+</body>
+</html>

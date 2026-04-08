@@ -1,0 +1,628 @@
+const path = require('node:path');
+const express = require('express');
+const compression = require('compression');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const { z } = require('zod');
+
+const { createDatabase } = require('./db');
+const { createNotifier } = require('./notifier');
+const {
+  site,
+  findIssueBySlug,
+  getPublishedIssues,
+} = require('./content/site');
+
+const subscriberSchema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .max(80, 'First name must be 80 characters or fewer.')
+    .optional()
+    .transform((value) => value || ''),
+  email: z
+    .string()
+    .trim()
+    .email('Enter a valid email address.')
+    .max(160, 'Email must be 160 characters or fewer.')
+    .transform((value) => value.toLowerCase()),
+  source: z
+    .string()
+    .trim()
+    .max(80, 'Source must be 80 characters or fewer.')
+    .optional()
+    .transform((value) => value || 'site'),
+  company: z
+    .string()
+    .max(0)
+    .optional()
+    .or(z.literal(''))
+    .transform(() => '')
+});
+
+const inquirySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Enter your name.')
+    .max(100, 'Name must be 100 characters or fewer.'),
+  email: z
+    .string()
+    .trim()
+    .email('Enter a valid work email address.')
+    .max(160, 'Email must be 160 characters or fewer.')
+    .transform((value) => value.toLowerCase()),
+  company: z
+    .string()
+    .trim()
+    .max(120, 'Company must be 120 characters or fewer.')
+    .optional()
+    .transform((value) => value || ''),
+  message: z
+    .string()
+    .trim()
+    .min(10, 'Tell us a bit more about the inquiry.')
+    .max(4000, 'Message must be 4000 characters or fewer.'),
+  source: z
+    .string()
+    .trim()
+    .max(80, 'Source must be 80 characters or fewer.')
+    .optional()
+    .transform((value) => value || 'advertise'),
+  website: z
+    .string()
+    .max(0)
+    .optional()
+    .or(z.literal(''))
+    .transform(() => '')
+});
+
+function getSubscriptionFeedback(status) {
+  switch (status) {
+    case 'success':
+      return {
+        tone: 'success',
+        message: 'Subscription confirmed. Your first issue is on the way.'
+      };
+    case 'exists':
+      return {
+        tone: 'info',
+        message: 'You are already subscribed. We updated your profile details.'
+      };
+    case 'invalid':
+      return {
+        tone: 'error',
+        message: 'Please enter a valid email address and try again.'
+      };
+    case 'rate-limited':
+      return {
+        tone: 'error',
+        message: 'Too many attempts right now. Please wait a minute and try again.'
+      };
+    default:
+      return null;
+  }
+}
+
+function requestWantsJson(req) {
+  return req.path.startsWith('/api/') || req.get('accept')?.includes('application/json');
+}
+
+function createRateLimitHandler({ redirectTo } = {}) {
+  return (req, res) => {
+    if (requestWantsJson(req)) {
+      res.status(429).json({ error: 'Too many requests. Please wait a minute and try again.' });
+      return;
+    }
+
+    if (redirectTo) {
+      res.redirect(redirectTo);
+      return;
+    }
+
+    res
+      .status(429)
+      .type('text/plain; charset=utf-8')
+      .send('Too many requests. Please wait a minute and try again.');
+  };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function toCsv(rows, columns) {
+  const header = columns.map((column) => column.header).join(',');
+  const lines = rows.map((row) =>
+    columns
+      .map((column) => {
+        const value = row[column.key] ?? '';
+        const escaped = String(value).replaceAll('"', '""');
+        return `"${escaped}"`;
+      })
+      .join(',')
+  );
+
+  return [header, ...lines].join('\n');
+}
+
+function createAdminGuard(adminConfig) {
+  if (!adminConfig) {
+    return (req, res) => {
+      res.status(404).type('text/plain; charset=utf-8').send('Not found.');
+    };
+  }
+
+  return (req, res, next) => {
+    const authorization = req.get('authorization');
+
+    if (!authorization || !authorization.startsWith('Basic ')) {
+      res.set('WWW-Authenticate', 'Basic realm="BoringMoney Admin"');
+      res.status(401).type('text/plain; charset=utf-8').send('Authentication required.');
+      return;
+    }
+
+    const decoded = Buffer.from(authorization.slice(6), 'base64').toString('utf8');
+    const [username, password] = decoded.split(':');
+
+    if (
+      username !== adminConfig.username ||
+      password !== adminConfig.password
+    ) {
+      res.set('WWW-Authenticate', 'Basic realm="BoringMoney Admin"');
+      res.status(401).type('text/plain; charset=utf-8').send('Invalid credentials.');
+      return;
+    }
+
+    next();
+  };
+}
+
+function createApp(options = {}) {
+  const app = express();
+  const database = createDatabase(options.sqlitePath);
+  const notifier = options.notifier || createNotifier(options.email || null);
+  const projectRoot = process.cwd();
+  const adminGuard = createAdminGuard(options.admin || null);
+  const globalRateLimit = {
+    windowMs: options.globalRateLimit?.windowMs || 15 * 60 * 1000,
+    limit: options.globalRateLimit?.limit || 300
+  };
+  const subscribeRateLimit = {
+    windowMs: options.subscribeRateLimit?.windowMs || 60 * 1000,
+    limit: options.subscribeRateLimit?.limit || 6
+  };
+
+  app.set('view engine', 'ejs');
+  app.set('views', path.join(process.cwd(), 'views'));
+  app.disable('x-powered-by');
+  app.set('trust proxy', options.trustProxy ?? 1);
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+          imgSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          upgradeInsecureRequests: null
+        }
+      }
+    })
+  );
+  app.use(
+    rateLimit({
+      windowMs: globalRateLimit.windowMs,
+      limit: globalRateLimit.limit,
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: createRateLimitHandler()
+    })
+  );
+  app.use(compression());
+  app.use(morgan(options.logFormat || 'dev'));
+  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
+  app.use(express.static(path.join(process.cwd(), 'public'), { extensions: ['html'] }));
+
+  app.use((req, res, next) => {
+    res.locals.site = site;
+    res.locals.currentPath = req.path;
+    res.locals.feedback = getSubscriptionFeedback(req.query.status);
+    next();
+  });
+
+  const subscribeLimiter = rateLimit({
+    windowMs: subscribeRateLimit.windowMs,
+    limit: subscribeRateLimit.limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: createRateLimitHandler({ redirectTo: '/subscribe?status=rate-limited' })
+  });
+  const inquiryLimiter = rateLimit({
+    windowMs: subscribeRateLimit.windowMs,
+    limit: subscribeRateLimit.limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: createRateLimitHandler({ redirectTo: '/advertise.html?status=inquiry-rate-limited' })
+  });
+
+  function parseSubscriberInput(payload) {
+    const parsed = subscriberSchema.safeParse(payload);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.issues[0].message
+      };
+    }
+
+    return {
+      ok: true,
+      data: parsed.data
+    };
+  }
+
+  function handleSubscription(payload) {
+    const parsed = parseSubscriberInput(payload);
+    if (!parsed.ok) {
+      return {
+        ok: false,
+        statusCode: 400,
+        error: parsed.error
+      };
+    }
+
+    if (parsed.data.company) {
+      return {
+        ok: true,
+        statusCode: 202,
+        isNew: false
+      };
+    }
+
+    const result = database.upsertSubscriber(parsed.data);
+    return {
+      ok: true,
+      statusCode: result.isNew ? 201 : 200,
+      isNew: result.isNew,
+      subscriber: result.subscriber
+    };
+  }
+
+  function handleInquiry(payload) {
+    const parsed = inquirySchema.safeParse(payload);
+
+    if (!parsed.success) {
+      return {
+        ok: false,
+        statusCode: 400,
+        error: parsed.error.issues[0].message
+      };
+    }
+
+    if (parsed.data.website) {
+      return {
+        ok: true,
+        statusCode: 202
+      };
+    }
+
+    const inquiry = database.createInquiry(parsed.data);
+
+    return {
+      ok: true,
+      statusCode: 201,
+      inquiry
+    };
+  }
+
+  function sendProjectFile(fileName) {
+    return (req, res) => {
+      res.sendFile(path.join(projectRoot, fileName));
+    };
+  }
+
+  function notifySafely(promise) {
+    Promise.resolve(promise).catch((error) => {
+      console.error('Notification error:', error);
+    });
+  }
+
+  function renderAdminPage() {
+    const subscribers = database.listSubscribers(25);
+    const inquiries = database.listInquiries(25);
+
+    const subscriberRows = subscribers
+      .map(
+        (subscriber) => `
+          <tr>
+            <td>${subscriber.id}</td>
+            <td>${escapeHtml(subscriber.firstName || '-')}</td>
+            <td>${escapeHtml(subscriber.email)}</td>
+            <td>${escapeHtml(subscriber.source)}</td>
+            <td>${escapeHtml(subscriber.status)}</td>
+            <td>${escapeHtml(subscriber.createdAt)}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    const inquiryRows = inquiries
+      .map(
+        (inquiry) => `
+          <tr>
+            <td>${inquiry.id}</td>
+            <td>${escapeHtml(inquiry.name)}</td>
+            <td>${escapeHtml(inquiry.email)}</td>
+            <td>${escapeHtml(inquiry.company || '-')}</td>
+            <td>${escapeHtml(inquiry.source)}</td>
+            <td>${escapeHtml(inquiry.status)}</td>
+            <td>${escapeHtml(inquiry.createdAt)}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    return `<!doctype html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>BoringMoney Admin</title>
+        <style>
+          body { font-family: system-ui, sans-serif; margin: 32px; background: #0d1117; color: #e6edf3; }
+          h1, h2 { margin: 0 0 16px; }
+          .meta { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 24px; }
+          .meta span, .meta a { padding: 10px 14px; border: 1px solid #30363d; border-radius: 10px; color: #e6edf3; text-decoration: none; }
+          section { margin: 32px 0; }
+          table { width: 100%; border-collapse: collapse; font-size: 14px; }
+          th, td { border-bottom: 1px solid #30363d; padding: 10px 8px; text-align: left; vertical-align: top; }
+          th { color: #8b949e; font-weight: 600; }
+        </style>
+      </head>
+      <body>
+        <h1>BoringMoney Admin</h1>
+        <div class="meta">
+          <span>Subscribers: ${database.countSubscribers()}</span>
+          <span>Inquiries: ${database.countInquiries()}</span>
+          <a href="/admin/subscribers.csv">Export subscribers CSV</a>
+          <a href="/admin/inquiries.csv">Export inquiries CSV</a>
+        </div>
+        <section>
+          <h2>Recent Subscribers</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>First Name</th><th>Email</th><th>Source</th><th>Status</th><th>Created</th></tr>
+            </thead>
+            <tbody>${subscriberRows || '<tr><td colspan="6">No subscribers yet.</td></tr>'}</tbody>
+          </table>
+        </section>
+        <section>
+          <h2>Recent Inquiries</h2>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Name</th><th>Email</th><th>Company</th><th>Source</th><th>Status</th><th>Created</th></tr>
+            </thead>
+            <tbody>${inquiryRows || '<tr><td colspan="7">No inquiries yet.</td></tr>'}</tbody>
+          </table>
+        </section>
+      </body>
+      </html>`;
+  }
+
+  app.get(['/', '/index.html'], sendProjectFile('index.html'));
+  app.get(['/about', '/about.html'], sendProjectFile('about.html'));
+  app.get(['/issues', '/issues.html'], sendProjectFile('issues.html'));
+  app.get(['/issue-carwash.html', '/issue-carwash'], sendProjectFile('issue-carwash.html'));
+  app.get('/issues/car-washes', (req, res) => {
+    res.redirect('/issue-carwash.html');
+  });
+  app.get(['/playbooks', '/playbooks.html'], sendProjectFile('playbooks.html'));
+  app.get(['/community', '/community.html'], sendProjectFile('community.html'));
+  app.get(['/subscribe', '/subscribe.html'], sendProjectFile('subscribe.html'));
+  app.get(['/advertise', '/advertise.html'], sendProjectFile('advertise.html'));
+  app.get(['/marketplace', '/marketplace.html'], sendProjectFile('marketplace.html'));
+  app.get(['/boring-score', '/boring-score.html'], sendProjectFile('boring-score.html'));
+  app.get('/shared.css', sendProjectFile('shared.css'));
+  app.get('/protect.js', sendProjectFile('protect.js'));
+  app.get('/vendor/matter.min.js', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'node_modules', 'matter-js', 'build', 'matter.min.js'));
+  });
+
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      uptime: process.uptime(),
+      subscribers: database.countSubscribers(),
+      inquiries: database.countInquiries()
+    });
+  });
+
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      issues: getPublishedIssues().length,
+      playbooks: site.playbooks.length,
+      subscribers: database.countSubscribers(),
+      inquiries: database.countInquiries()
+    });
+  });
+
+  app.get('/ready', (req, res) => {
+    res.json({
+      status: 'ready',
+      database: 'ok'
+    });
+  });
+
+  app.get('/api/issues', (req, res) => {
+    res.json({
+      issues: site.issues
+    });
+  });
+
+  app.get('/api/issues/:slug', (req, res) => {
+    const issue = findIssueBySlug(req.params.slug);
+
+    if (!issue) {
+      res.status(404).json({ error: 'Issue not found.' });
+      return;
+    }
+
+    res.json({ issue });
+  });
+
+  app.get('/api/playbooks', (req, res) => {
+    res.json({
+      playbooks: site.playbooks
+    });
+  });
+
+  app.get('/admin', adminGuard, (req, res) => {
+    res.set('Content-Type', 'text/html; charset=utf-8').send(renderAdminPage());
+  });
+
+  app.get('/admin/subscribers.csv', adminGuard, (req, res) => {
+    const csv = toCsv(database.exportSubscribers(), [
+      { key: 'id', header: 'id' },
+      { key: 'firstName', header: 'first_name' },
+      { key: 'email', header: 'email' },
+      { key: 'source', header: 'source' },
+      { key: 'status', header: 'status' },
+      { key: 'createdAt', header: 'created_at' },
+      { key: 'updatedAt', header: 'updated_at' }
+    ]);
+
+    res
+      .set('Content-Type', 'text/csv; charset=utf-8')
+      .set('Content-Disposition', 'attachment; filename="subscribers.csv"')
+      .send(csv);
+  });
+
+  app.get('/admin/inquiries.csv', adminGuard, (req, res) => {
+    const csv = toCsv(database.exportInquiries(), [
+      { key: 'id', header: 'id' },
+      { key: 'name', header: 'name' },
+      { key: 'email', header: 'email' },
+      { key: 'company', header: 'company' },
+      { key: 'message', header: 'message' },
+      { key: 'source', header: 'source' },
+      { key: 'status', header: 'status' },
+      { key: 'createdAt', header: 'created_at' }
+    ]);
+
+    res
+      .set('Content-Type', 'text/csv; charset=utf-8')
+      .set('Content-Disposition', 'attachment; filename="inquiries.csv"')
+      .send(csv);
+  });
+
+  app.post('/api/subscribers', subscribeLimiter, (req, res) => {
+    const result = handleSubscription(req.body);
+
+    if (!result.ok) {
+      res.status(result.statusCode).json({ error: result.error });
+      return;
+    }
+
+    if (result.subscriber && result.isNew) {
+      notifySafely(notifier.notifyNewSubscriber(result.subscriber));
+    }
+
+    res.status(result.statusCode).json({
+      message: result.isNew
+        ? 'Subscription confirmed.'
+        : 'Already subscribed. Profile updated.',
+      subscriber: result.subscriber || null
+    });
+  });
+
+  app.post('/api/inquiries', inquiryLimiter, (req, res) => {
+    const result = handleInquiry(req.body);
+
+    if (!result.ok) {
+      res.status(result.statusCode).json({ error: result.error });
+      return;
+    }
+
+    if (result.inquiry) {
+      notifySafely(notifier.notifyNewInquiry(result.inquiry));
+    }
+
+    res.status(result.statusCode).json({
+      message: 'Inquiry received. We will get back to you shortly.',
+      inquiry: result.inquiry || null
+    });
+  });
+
+  app.post('/subscribe', subscribeLimiter, (req, res) => {
+    const result = handleSubscription(req.body);
+
+    if (!result.ok) {
+      res.redirect('/subscribe?status=invalid');
+      return;
+    }
+
+    if (result.subscriber && result.isNew) {
+      notifySafely(notifier.notifyNewSubscriber(result.subscriber));
+    }
+
+    res.redirect(result.isNew ? '/subscribe?status=success' : '/subscribe?status=exists');
+  });
+
+  app.post('/inquiries', inquiryLimiter, (req, res) => {
+    const result = handleInquiry(req.body);
+
+    if (!result.ok) {
+      res.redirect('/advertise.html?status=inquiry-invalid');
+      return;
+    }
+
+    if (result.inquiry) {
+      notifySafely(notifier.notifyNewInquiry(result.inquiry));
+    }
+
+    res.redirect('/advertise.html?status=inquiry-success');
+  });
+
+  app.use((req, res) => {
+    res.status(404).render('404');
+  });
+
+  app.use((error, req, res, next) => {
+    if (res.headersSent) {
+      next(error);
+      return;
+    }
+
+    console.error(error);
+
+    if (requestWantsJson(req)) {
+      res.status(500).json({ error: 'Internal server error.' });
+      return;
+    }
+
+    res.status(500).render('500');
+  });
+
+  app.locals.database = database;
+  app.locals.shutdown = () => {
+    database.close();
+  };
+
+  return app;
+}
+
+module.exports = { createApp };

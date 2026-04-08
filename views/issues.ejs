@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: `Issues | ${site.name}`,
+    pageDescription: 'Browse published BoringMoney issues and what is coming next.'
+  }) %>
+</head>
+<body class="page">
+  <div class="page-frame"></div>
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="section">
+      <p class="eyebrow">Archive</p>
+      <h1 class="page-title">Every published issue, plus the next one in line.</h1>
+      <p class="lede">Each issue is written to answer one question: is this business actually worth owning?</p>
+
+      <div class="issue-list issue-list--full">
+        <% publishedIssues.forEach((issue) => { %>
+          <article class="issue-row reveal-on-scroll">
+            <div class="issue-row__meta">
+              <span>Issue <%= issue.number %></span>
+              <span><%= issue.tag %></span>
+            </div>
+            <div class="issue-row__content">
+              <h2><a href="/issues/<%= issue.slug %>"><%= issue.title %></a></h2>
+              <p><%= issue.summary %></p>
+            </div>
+            <a class="issue-row__link" href="/issues/<%= issue.slug %>">Read</a>
+          </article>
+        <% }) %>
+
+        <% upcomingIssues.forEach((issue) => { %>
+          <article class="issue-row issue-row--muted reveal-on-scroll">
+            <div class="issue-row__meta">
+              <span>Issue <%= issue.number %></span>
+              <span><%= issue.tag %></span>
+            </div>
+            <div class="issue-row__content">
+              <h2><%= issue.title %></h2>
+              <p><%= issue.summary %></p>
+            </div>
+            <span class="issue-row__link issue-row__link--muted">Soon</span>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

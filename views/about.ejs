@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: `About | ${site.name}`,
+    pageDescription: 'Why BoringMoney exists and how each issue is scored.'
+  }) %>
+</head>
+<body class="page">
+  <div class="page-frame"></div>
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="section section--narrow">
+      <p class="eyebrow">About</p>
+      <h1 class="page-title">The editorial product for the quiet economy.</h1>
+      <p class="lede"><%= site.about.manifesto %></p>
+
+      <div class="prose">
+        <% site.about.body.forEach((paragraph) => { %>
+          <p><%= paragraph %></p>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <p class="eyebrow">The Boring Score</p>
+        <h2>Every business is graded through an ownership lens.</h2>
+      </div>
+
+      <div class="principles-grid">
+        <% site.about.score.forEach((item) => { %>
+          <article class="principle reveal-on-scroll">
+            <h3><%= item.title %></h3>
+            <p><%= item.body %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>
