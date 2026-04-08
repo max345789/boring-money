@@ -9,6 +9,28 @@ function parseBoolean(value, fallback = false) {
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase());
 }
 
+function parseTrustProxy(value, fallback = false) {
+  if (value === undefined || value === '') {
+    return fallback;
+  }
+
+  const normalized = String(value).toLowerCase();
+
+  if (/^\d+$/.test(normalized)) {
+    return Number(normalized);
+  }
+
+  if (['true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+
+  if (['false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return value;
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).optional(),
   PORT: z.coerce.number().int().min(1).max(65535).optional(),
@@ -41,7 +63,7 @@ const config = {
   isProduction: env.NODE_ENV === 'production',
   port: env.PORT || 3000,
   sqlitePath: env.SQLITE_PATH || path.join(process.cwd(), 'data', 'boring-money.db'),
-  trustProxy: parseBoolean(env.TRUST_PROXY, true),
+  trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV === 'production' ? 1 : false),
   admin:
     env.ADMIN_USERNAME && env.ADMIN_PASSWORD
       ? {

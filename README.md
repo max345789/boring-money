@@ -58,7 +58,7 @@ Required:
 
 Recommended for production:
 
-- `TRUST_PROXY=true`
+- `TRUST_PROXY=1`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
 

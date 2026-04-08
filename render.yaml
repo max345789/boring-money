@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: TRUST_PROXY
-        value: "true"
+        value: "1"
       - key: SQLITE_PATH
         value: /var/data/boring-money.db
       - key: ADMIN_USERNAME
