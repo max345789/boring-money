@@ -186,6 +186,8 @@ function createAdminGuard(adminConfig) {
 
 function createApp(options = {}) {
   const app = express();
+  const projectRoot = options.projectRoot || path.resolve(__dirname, '..');
+  const sendFileOptions = { dotfiles: 'allow' };
   const database =
     options.database ||
     createDatabase({
@@ -193,7 +195,6 @@ function createApp(options = {}) {
       sqlitePath: options.sqlitePath
     });
   const notifier = options.notifier || createNotifier(options.email || null);
-  const projectRoot = process.cwd();
   const adminGuard = createAdminGuard(options.admin || null);
   const globalRateLimit = {
     windowMs: options.globalRateLimit?.windowMs || 15 * 60 * 1000,
@@ -205,7 +206,7 @@ function createApp(options = {}) {
   };
 
   app.set('view engine', 'ejs');
-  app.set('views', path.join(process.cwd(), 'views'));
+  app.set('views', path.join(projectRoot, 'views'));
   app.disable('x-powered-by');
   app.set('trust proxy', options.trustProxy ?? 1);
 
@@ -240,7 +241,12 @@ function createApp(options = {}) {
   app.use(morgan(options.logFormat || 'dev'));
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
-  app.use(express.static(path.join(process.cwd(), 'public'), { extensions: ['html'] }));
+  app.use(
+    express.static(path.join(projectRoot, 'public'), {
+      extensions: ['html'],
+      dotfiles: 'allow'
+    })
+  );
 
   app.use((req, res, next) => {
     res.locals.site = site;
@@ -335,7 +341,7 @@ function createApp(options = {}) {
 
   function sendProjectFile(fileName) {
     return (req, res) => {
-      res.sendFile(path.join(projectRoot, fileName));
+      res.sendFile(path.join(projectRoot, fileName), sendFileOptions);
     };
   }
 
@@ -447,7 +453,10 @@ function createApp(options = {}) {
   app.get('/shared.css', sendProjectFile('shared.css'));
   app.get('/protect.js', sendProjectFile('protect.js'));
   app.get('/vendor/matter.min.js', (req, res) => {
-    res.sendFile(path.join(projectRoot, 'node_modules', 'matter-js', 'build', 'matter.min.js'));
+    res.sendFile(
+      path.join(projectRoot, 'node_modules', 'matter-js', 'build', 'matter.min.js'),
+      sendFileOptions
+    );
   });
 
   app.get('/health', async (req, res) => {
