@@ -34,6 +34,7 @@ function parseTrustProxy(value, fallback = false) {
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).optional(),
   PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  DATABASE_URL: z.string().optional(),
   SQLITE_PATH: z.string().optional(),
   TRUST_PROXY: z.string().optional(),
   ADMIN_USERNAME: z.string().min(1).optional(),
@@ -62,6 +63,7 @@ const env = parsed.data;
 const config = {
   isProduction: env.NODE_ENV === 'production',
   port: env.PORT || 3000,
+  databaseUrl: env.DATABASE_URL || null,
   sqlitePath: env.SQLITE_PATH || path.join(process.cwd(), 'data', 'boring-money.db'),
   trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV === 'production' ? 1 : false),
   admin:

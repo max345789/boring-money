@@ -186,7 +186,12 @@ function createAdminGuard(adminConfig) {
 
 function createApp(options = {}) {
   const app = express();
-  const database = createDatabase(options.sqlitePath);
+  const database =
+    options.database ||
+    createDatabase({
+      connectionString: options.databaseUrl,
+      sqlitePath: options.sqlitePath
+    });
   const notifier = options.notifier || createNotifier(options.email || null);
   const projectRoot = process.cwd();
   const adminGuard = createAdminGuard(options.admin || null);
@@ -274,7 +279,7 @@ function createApp(options = {}) {
     };
   }
 
-  function handleSubscription(payload) {
+  async function handleSubscription(payload) {
     const parsed = parseSubscriberInput(payload);
     if (!parsed.ok) {
       return {
@@ -292,7 +297,7 @@ function createApp(options = {}) {
       };
     }
 
-    const result = database.upsertSubscriber(parsed.data);
+    const result = await database.upsertSubscriber(parsed.data);
     return {
       ok: true,
       statusCode: result.isNew ? 201 : 200,
@@ -301,7 +306,7 @@ function createApp(options = {}) {
     };
   }
 
-  function handleInquiry(payload) {
+  async function handleInquiry(payload) {
     const parsed = inquirySchema.safeParse(payload);
 
     if (!parsed.success) {
@@ -319,7 +324,7 @@ function createApp(options = {}) {
       };
     }
 
-    const inquiry = database.createInquiry(parsed.data);
+    const inquiry = await database.createInquiry(parsed.data);
 
     return {
       ok: true,
@@ -340,9 +345,13 @@ function createApp(options = {}) {
     });
   }
 
-  function renderAdminPage() {
-    const subscribers = database.listSubscribers(25);
-    const inquiries = database.listInquiries(25);
+  async function renderAdminPage() {
+    const [subscribers, inquiries, subscriberCount, inquiryCount] = await Promise.all([
+      database.listSubscribers(25),
+      database.listInquiries(25),
+      database.countSubscribers(),
+      database.countInquiries()
+    ]);
 
     const subscriberRows = subscribers
       .map(
@@ -395,8 +404,8 @@ function createApp(options = {}) {
       <body>
         <h1>BoringMoney Admin</h1>
         <div class="meta">
-          <span>Subscribers: ${database.countSubscribers()}</span>
-          <span>Inquiries: ${database.countInquiries()}</span>
+          <span>Subscribers: ${subscriberCount}</span>
+          <span>Inquiries: ${inquiryCount}</span>
           <a href="/admin/subscribers.csv">Export subscribers CSV</a>
           <a href="/admin/inquiries.csv">Export inquiries CSV</a>
         </div>
@@ -441,26 +450,38 @@ function createApp(options = {}) {
     res.sendFile(path.join(projectRoot, 'node_modules', 'matter-js', 'build', 'matter.min.js'));
   });
 
-  app.get('/health', (req, res) => {
+  app.get('/health', async (req, res) => {
+    const [subscribers, inquiries] = await Promise.all([
+      database.countSubscribers(),
+      database.countInquiries()
+    ]);
+
     res.json({
       status: 'ok',
       uptime: process.uptime(),
-      subscribers: database.countSubscribers(),
-      inquiries: database.countInquiries()
+      subscribers,
+      inquiries
     });
   });
 
-  app.get('/api/health', (req, res) => {
+  app.get('/api/health', async (req, res) => {
+    const [subscribers, inquiries] = await Promise.all([
+      database.countSubscribers(),
+      database.countInquiries()
+    ]);
+
     res.json({
       status: 'ok',
       issues: getPublishedIssues().length,
       playbooks: site.playbooks.length,
-      subscribers: database.countSubscribers(),
-      inquiries: database.countInquiries()
+      subscribers,
+      inquiries
     });
   });
 
-  app.get('/ready', (req, res) => {
+  app.get('/ready', async (req, res) => {
+    await database.ping();
+
     res.json({
       status: 'ready',
       database: 'ok'
@@ -490,12 +511,12 @@ function createApp(options = {}) {
     });
   });
 
-  app.get('/admin', adminGuard, (req, res) => {
-    res.set('Content-Type', 'text/html; charset=utf-8').send(renderAdminPage());
+  app.get('/admin', adminGuard, async (req, res) => {
+    res.set('Content-Type', 'text/html; charset=utf-8').send(await renderAdminPage());
   });
 
-  app.get('/admin/subscribers.csv', adminGuard, (req, res) => {
-    const csv = toCsv(database.exportSubscribers(), [
+  app.get('/admin/subscribers.csv', adminGuard, async (req, res) => {
+    const csv = toCsv(await database.exportSubscribers(), [
       { key: 'id', header: 'id' },
       { key: 'firstName', header: 'first_name' },
       { key: 'email', header: 'email' },
@@ -511,8 +532,8 @@ function createApp(options = {}) {
       .send(csv);
   });
 
-  app.get('/admin/inquiries.csv', adminGuard, (req, res) => {
-    const csv = toCsv(database.exportInquiries(), [
+  app.get('/admin/inquiries.csv', adminGuard, async (req, res) => {
+    const csv = toCsv(await database.exportInquiries(), [
       { key: 'id', header: 'id' },
       { key: 'name', header: 'name' },
       { key: 'email', header: 'email' },
@@ -529,8 +550,8 @@ function createApp(options = {}) {
       .send(csv);
   });
 
-  app.post('/api/subscribers', subscribeLimiter, (req, res) => {
-    const result = handleSubscription(req.body);
+  app.post('/api/subscribers', subscribeLimiter, async (req, res) => {
+    const result = await handleSubscription(req.body);
 
     if (!result.ok) {
       res.status(result.statusCode).json({ error: result.error });
@@ -549,8 +570,8 @@ function createApp(options = {}) {
     });
   });
 
-  app.post('/api/inquiries', inquiryLimiter, (req, res) => {
-    const result = handleInquiry(req.body);
+  app.post('/api/inquiries', inquiryLimiter, async (req, res) => {
+    const result = await handleInquiry(req.body);
 
     if (!result.ok) {
       res.status(result.statusCode).json({ error: result.error });
@@ -567,8 +588,8 @@ function createApp(options = {}) {
     });
   });
 
-  app.post('/subscribe', subscribeLimiter, (req, res) => {
-    const result = handleSubscription(req.body);
+  app.post('/subscribe', subscribeLimiter, async (req, res) => {
+    const result = await handleSubscription(req.body);
 
     if (!result.ok) {
       res.redirect('/subscribe?status=invalid');
@@ -582,8 +603,8 @@ function createApp(options = {}) {
     res.redirect(result.isNew ? '/subscribe?status=success' : '/subscribe?status=exists');
   });
 
-  app.post('/inquiries', inquiryLimiter, (req, res) => {
-    const result = handleInquiry(req.body);
+  app.post('/inquiries', inquiryLimiter, async (req, res) => {
+    const result = await handleInquiry(req.body);
 
     if (!result.ok) {
       res.redirect('/advertise.html?status=inquiry-invalid');
@@ -619,7 +640,7 @@ function createApp(options = {}) {
 
   app.locals.database = database;
   app.locals.shutdown = () => {
-    database.close();
+    return Promise.resolve(database.close());
   };
 
   return app;

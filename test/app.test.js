@@ -23,13 +23,17 @@ async function createTestServer(options = {}) {
   };
 }
 
+async function closeTestServer({ app, server }) {
+  await new Promise((resolve) => {
+    server.close(resolve);
+  });
+  await app.locals.shutdown();
+}
+
 test('home page renders successfully', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const response = await fetch(`${baseUrl}/`);
   const html = await response.text();
@@ -41,10 +45,7 @@ test('home page renders successfully', async (t) => {
 test('issue detail page renders by slug', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const response = await fetch(`${baseUrl}/issues/car-washes`);
   const html = await response.text();
@@ -57,10 +58,7 @@ test('issue detail page renders by slug', async (t) => {
 test('subscriber API accepts valid submissions and deduplicates emails', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const firstResponse = await fetch(`${baseUrl}/api/subscribers`, {
     method: 'POST',
@@ -104,10 +102,7 @@ test('subscriber API accepts valid submissions and deduplicates emails', async (
 test('subscriber API rejects invalid payloads', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const response = await fetch(`${baseUrl}/api/subscribers`, {
     method: 'POST',
@@ -132,10 +127,7 @@ test('subscriber API rejects invalid payloads', async (t) => {
 test('advertise page renders from the custom HTML route', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const response = await fetch(`${baseUrl}/advertise.html`);
   const html = await response.text();
@@ -148,10 +140,7 @@ test('advertise page renders from the custom HTML route', async (t) => {
 test('local Matter.js asset is served from the app', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const response = await fetch(`${baseUrl}/vendor/matter.min.js`);
   const body = await response.text();
@@ -163,10 +152,7 @@ test('local Matter.js asset is served from the app', async (t) => {
 test('inquiry API accepts valid advertiser leads', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const response = await fetch(`${baseUrl}/api/inquiries`, {
     method: 'POST',
@@ -199,10 +185,7 @@ test('admin dashboard requires auth and serves CSV export when enabled', async (
     }
   });
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const unauthorized = await fetch(`${baseUrl}/admin`);
   assert.equal(unauthorized.status, 401);
@@ -248,10 +231,7 @@ test('notifier is called for new subscribers and inquiries', async (t) => {
     }
   });
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   await fetch(`${baseUrl}/api/subscribers`, {
     method: 'POST',
@@ -298,10 +278,7 @@ test('global rate limiter applies to all endpoints', async (t) => {
     }
   });
 
-  t.after(() => {
-    server.close();
-    app.locals.shutdown();
-  });
+  t.after(() => closeTestServer({ app, server }));
 
   const first = await fetch(`${baseUrl}/api/health`, {
     headers: { Accept: 'application/json' }
@@ -319,4 +296,68 @@ test('global rate limiter applies to all endpoints', async (t) => {
   assert.equal(second.status, 200);
   assert.equal(third.status, 429);
   assert.match(body.error, /too many requests/i);
+});
+
+test('app supports async database adapters for Supabase/Postgres', async (t) => {
+  const database = {
+    async ping() {},
+    async upsertSubscriber(payload) {
+      return {
+        isNew: true,
+        subscriber: {
+          id: 1,
+          firstName: payload.firstName || null,
+          email: payload.email,
+          source: payload.source,
+          status: 'active',
+          createdAt: '2026-04-08T00:00:00.000Z',
+          updatedAt: '2026-04-08T00:00:00.000Z'
+        }
+      };
+    },
+    async countSubscribers() {
+      return 1;
+    },
+    async listSubscribers() {
+      return [];
+    },
+    async createInquiry(payload) {
+      return {
+        id: 1,
+        name: payload.name,
+        email: payload.email,
+        company: payload.company || null,
+        message: payload.message,
+        source: payload.source,
+        status: 'new',
+        createdAt: '2026-04-08T00:00:00.000Z'
+      };
+    },
+    async countInquiries() {
+      return 0;
+    },
+    async listInquiries() {
+      return [];
+    },
+    async exportSubscribers() {
+      return [];
+    },
+    async exportInquiries() {
+      return [];
+    },
+    async close() {}
+  };
+
+  const { app, server, baseUrl } = await createTestServer({ database });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const ready = await fetch(`${baseUrl}/ready`);
+  const health = await fetch(`${baseUrl}/api/health`, {
+    headers: { Accept: 'application/json' }
+  });
+
+  assert.equal(ready.status, 200);
+  assert.equal(health.status, 200);
+  assert.equal((await health.json()).subscribers, 1);
 });
