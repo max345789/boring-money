@@ -78,13 +78,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.createElement('div');
     overlay.className = 'mobile-overlay';
     overlay.innerHTML = `
-      <a href="index.html">Home</a>
-      <a href="issues.html">Issues</a>
-      <a href="about.html">About</a>
-      <a href="playbooks.html">Playbooks</a>
-      <a href="community.html">Community</a>
-      <a href="advertise.html">Advertise</a>
-      <a href="subscribe.html" class="mob-cta">Subscribe — Free</a>
+      <a href="/">Home</a>
+      <a href="/issues">Issues</a>
+      <a href="/about">About</a>
+      <a href="/playbooks">Playbooks</a>
+      <a href="/community">Community</a>
+      <a href="/advertise">Advertise</a>
+      <a href="/subscribe" class="mob-cta">Subscribe — Free</a>
     `;
     document.body.appendChild(overlay);
 
