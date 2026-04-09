@@ -4,6 +4,7 @@ async function verifyTurnstileToken({
   secretKey,
   token,
   remoteIp,
+  timeoutMs = 5000,
   fetchImpl = fetch
 }) {
   if (!secretKey) {
@@ -25,6 +26,8 @@ async function verifyTurnstileToken({
 
   let response;
   let payload;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     response = await fetchImpl(TURNSTILE_VERIFY_URL, {
@@ -32,15 +35,22 @@ async function verifyTurnstileToken({
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: body.toString()
+      body: body.toString(),
+      signal: controller.signal
     });
     payload = await response.json();
   } catch (error) {
+    const isTimeout =
+      error &&
+      (error.name === 'AbortError' || error.code === 'ABORT_ERR');
+
     return {
       ok: false,
-      error: 'verification-unavailable',
+      error: isTimeout ? 'verification-timeout' : 'verification-unavailable',
       reason: error instanceof Error ? error.message : String(error)
     };
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!response.ok) {

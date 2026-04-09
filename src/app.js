@@ -138,13 +138,22 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function sanitizeCsvValue(value) {
+  const text = String(value);
+  if (/^[\t\r\n ]*[=+\-@]/.test(text)) {
+    return `'${text}`;
+  }
+
+  return text;
+}
+
 function toCsv(rows, columns) {
   const header = columns.map((column) => column.header).join(',');
   const lines = rows.map((row) =>
     columns
       .map((column) => {
         const value = row[column.key] ?? '';
-        const escaped = String(value).replaceAll('"', '""');
+        const escaped = sanitizeCsvValue(value).replaceAll('"', '""');
         return `"${escaped}"`;
       })
       .join(',')
@@ -170,7 +179,16 @@ function createAdminGuard(adminConfig) {
     }
 
     const decoded = Buffer.from(authorization.slice(6), 'base64').toString('utf8');
-    const [username, password] = decoded.split(':');
+    const separator = decoded.indexOf(':');
+
+    if (separator === -1) {
+      res.set('WWW-Authenticate', 'Basic realm="BoringMoney Admin"');
+      res.status(401).type('text/plain; charset=utf-8').send('Invalid credentials.');
+      return;
+    }
+
+    const username = decoded.slice(0, separator);
+    const password = decoded.slice(separator + 1);
 
     if (
       username !== adminConfig.username ||
@@ -272,7 +290,7 @@ function createApp(options = {}) {
     limit: subscribeRateLimit.limit,
     standardHeaders: true,
     legacyHeaders: false,
-    handler: createRateLimitHandler({ redirectTo: '/advertise.html?status=inquiry-rate-limited' })
+    handler: createRateLimitHandler({ redirectTo: '/advertise?status=inquiry-rate-limited' })
   });
 
   async function verifyBotCheck(payload, remoteIp) {
@@ -302,7 +320,10 @@ function createApp(options = {}) {
       };
     }
 
-    if (verification.error === 'verification-unavailable') {
+    if (
+      verification.error === 'verification-unavailable' ||
+      verification.error === 'verification-timeout'
+    ) {
       return {
         ok: false,
         statusCode: 503,
@@ -497,10 +518,10 @@ function createApp(options = {}) {
   app.get(['/', '/index.html'], sendProjectFile('index.html'));
   app.get(['/about', '/about.html'], sendProjectFile('about.html'));
   app.get(['/issues', '/issues.html'], sendProjectFile('issues.html'));
-  app.get(['/issue-carwash.html', '/issue-carwash'], sendProjectFile('issue-carwash.html'));
-  app.get('/issues/car-washes', (req, res) => {
-    res.redirect('/issue-carwash.html');
-  });
+  app.get(
+    ['/issue-carwash.html', '/issue-carwash', '/issues/car-washes'],
+    sendProjectFile('issue-carwash.html')
+  );
   app.get(['/playbooks', '/playbooks.html'], sendProjectFile('playbooks.html'));
   app.get(['/community', '/community.html'], sendProjectFile('community.html'));
   app.get(['/subscribe', '/subscribe.html'], sendProjectFile('subscribe.html'));
@@ -679,7 +700,7 @@ function createApp(options = {}) {
     const result = await handleInquiry(req.body, req);
 
     if (!result.ok) {
-      res.redirect('/advertise.html?status=inquiry-invalid');
+      res.redirect('/advertise?status=inquiry-invalid');
       return;
     }
 
@@ -687,7 +708,7 @@ function createApp(options = {}) {
       notifySafely(notifier.notifyNewInquiry(result.inquiry));
     }
 
-    res.redirect('/advertise.html?status=inquiry-success');
+    res.redirect('/advertise?status=inquiry-success');
   });
 
   app.use((req, res) => {

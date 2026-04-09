@@ -55,6 +55,19 @@ test('issue detail page renders by slug', async (t) => {
   assert.match(html, /The Boring Score/);
 });
 
+test('issue clean route does not redirect to html suffix', async (t) => {
+  const { app, server, baseUrl } = await createTestServer();
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/issues/car-washes`, {
+    redirect: 'manual'
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('location'), null);
+});
+
 test('subscriber API accepts valid submissions and deduplicates emails', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
@@ -215,6 +228,59 @@ test('admin dashboard requires auth and serves CSV export when enabled', async (
   assert.match(await dashboard.text(), /BoringMoney Admin/);
   assert.equal(csv.status, 200);
   assert.match(await csv.text(), /admin-test@example.com/);
+});
+
+test('admin auth supports passwords that include a colon', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    admin: {
+      username: 'admin',
+      password: 'secret:with-colon'
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const authHeader = `Basic ${Buffer.from('admin:secret:with-colon').toString('base64')}`;
+  const response = await fetch(`${baseUrl}/admin`, {
+    headers: { Authorization: authHeader }
+  });
+
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /BoringMoney Admin/);
+});
+
+test('csv export sanitizes formula-like subscriber fields', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    admin: {
+      username: 'admin',
+      password: 'secret'
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  await fetch(`${baseUrl}/api/subscribers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      firstName: '=2+2',
+      email: 'csv-safe@example.com',
+      source: 'test-suite',
+      company: ''
+    })
+  });
+
+  const authHeader = `Basic ${Buffer.from('admin:secret').toString('base64')}`;
+  const response = await fetch(`${baseUrl}/admin/subscribers.csv`, {
+    headers: { Authorization: authHeader }
+  });
+  const csv = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(csv, /"'=2\+2"/);
 });
 
 test('notifier is called for new subscribers and inquiries', async (t) => {
@@ -399,6 +465,105 @@ test('turnstile verification outage returns 503 for inquiry API', async (t) => {
 
   assert.equal(response.status, 503);
   assert.match((await response.json()).error, /temporarily unavailable/i);
+});
+
+test('turnstile verification timeout returns 503 for inquiry API', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    turnstile: {
+      siteKey: 'site-key',
+      secretKey: 'secret-key'
+    },
+    turnstileVerifier: async () => ({
+      ok: false,
+      error: 'verification-timeout'
+    })
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/api/inquiries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'Turnstile Timeout',
+      email: 'timeout@example.com',
+      company: 'Quiet Capital',
+      message: 'Timeouts should return service unavailable to callers.',
+      source: 'test-suite',
+      website: '',
+      turnstileToken: 'any-token'
+    })
+  });
+
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error, /temporarily unavailable/i);
+});
+
+test('inquiry form redirects use clean routes for invalid and success states', async (t) => {
+  const { app, server, baseUrl } = await createTestServer();
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const invalidResponse = await fetch(`${baseUrl}/inquiries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: 'name=Op&email=op%40example.com&company=Co&message=short&website=',
+    redirect: 'manual'
+  });
+  assert.equal(invalidResponse.status, 302);
+  assert.equal(invalidResponse.headers.get('location'), '/advertise?status=inquiry-invalid');
+
+  const successResponse = await fetch(`${baseUrl}/inquiries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body:
+      'name=Op&email=op%40example.com&company=Co&message=This%20is%20a%20valid%20inquiry%20message.&website=',
+    redirect: 'manual'
+  });
+  assert.equal(successResponse.status, 302);
+  assert.equal(successResponse.headers.get('location'), '/advertise?status=inquiry-success');
+});
+
+test('inquiry rate limit redirect uses clean route', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    subscribeRateLimit: {
+      windowMs: 60 * 1000,
+      limit: 1
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const body =
+    'name=Op&email=op%40example.com&company=Co&message=This%20is%20a%20valid%20inquiry%20message.&website=';
+
+  await fetch(`${baseUrl}/inquiries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body,
+    redirect: 'manual'
+  });
+
+  const limitedResponse = await fetch(`${baseUrl}/inquiries`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body,
+    redirect: 'manual'
+  });
+
+  assert.equal(limitedResponse.status, 302);
+  assert.equal(limitedResponse.headers.get('location'), '/advertise?status=inquiry-rate-limited');
 });
 
 test('runtime config endpoint exposes turnstile site key when enabled', async (t) => {
