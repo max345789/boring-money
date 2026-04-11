@@ -663,6 +663,15 @@ function createApp(options = {}) {
     loadRazorpay: true,
     protectUi: false
   })));
+  app.get('/order-complete', renderPage('order-complete', () => ({
+    pageTitle: 'Order Complete | Sprig & Soil',
+    pageDescription:
+      'Your Sprig & Soil order is confirmed. Review your payment details, delivery summary, and what happens next.',
+    canonicalPath: '/order-complete',
+    robotsContent: 'noindex,nofollow,noarchive',
+    pageScripts: ['/order-complete.js'],
+    protectUi: false
+  })));
   app.get(['/issues', '/issues.html', '/marketplace', '/marketplace.html'], redirectTo('/shop'));
   app.get('/about', renderPage('about', () => ({
     pageTitle: 'About Sprig & Soil',

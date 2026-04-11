@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    robotsContent,
+    structuredData,
+    pageScripts: ['/order-complete.js'],
+    protectUi: false
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="celebration-hero">
+      <div class="celebration-hero__backdrop" aria-hidden="true">
+        <span class="celebration-orb celebration-orb--one"></span>
+        <span class="celebration-orb celebration-orb--two"></span>
+        <span class="celebration-orb celebration-orb--three"></span>
+      </div>
+
+      <div class="celebration-hero__inner shell">
+        <div class="celebration-copy reveal-on-scroll">
+          <p class="eyebrow">Order complete</p>
+          <h1>Your microgreens are booked into the next harvest cycle.</h1>
+          <p class="lede">
+            Payment is confirmed. We have your delivery details, your trays are locked in,
+            and the next step is local harvest planning and route scheduling.
+          </p>
+
+          <div class="celebration-actions">
+            <a class="button button-primary" href="/shop">Shop more trays</a>
+            <a class="button button-secondary" href="/guides">See serving ideas</a>
+          </div>
+        </div>
+
+        <div class="confirmation-mark reveal-on-scroll" aria-hidden="true">
+          <div class="confirmation-mark__halo"></div>
+          <div class="confirmation-mark__ring"></div>
+          <div class="confirmation-mark__core">
+            <span class="confirmation-mark__check"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="stat-strip stat-strip--celebration">
+        <article class="stat-pill reveal-on-scroll">
+          <strong id="complete-total">₹0.00</strong>
+          <span>Order total</span>
+        </article>
+        <article class="stat-pill reveal-on-scroll">
+          <strong id="complete-items">0 trays</strong>
+          <span>Selected for delivery</span>
+        </article>
+        <article class="stat-pill reveal-on-scroll">
+          <strong>48 hrs</strong>
+          <span>Typical harvest-to-door window</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="section section--tint">
+      <div class="shell completion-layout">
+        <div class="completion-panel reveal-on-scroll">
+          <div class="section-heading section-heading--compact">
+            <p class="eyebrow">Delivery summary</p>
+            <h2>Everything we captured for this order.</h2>
+          </div>
+
+          <div class="completion-list" id="complete-items-list"></div>
+
+          <div class="summary-totals completion-totals">
+            <div class="summary-row">
+              <span>Plan</span>
+              <strong id="complete-plan">Order</strong>
+            </div>
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <strong id="complete-subtotal">₹0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Savings</span>
+              <strong id="complete-savings">₹0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Delivery</span>
+              <strong id="complete-delivery">Included</strong>
+            </div>
+          </div>
+        </div>
+
+        <aside class="completion-sidebar">
+          <div class="completion-card reveal-on-scroll">
+            <p class="eyebrow">Payment</p>
+            <h2>Verified and ready.</h2>
+            <dl class="meta-list">
+              <div>
+                <dt>Payment ID</dt>
+                <dd id="complete-payment-id">Pending</dd>
+              </div>
+              <div>
+                <dt>Order ID</dt>
+                <dd id="complete-order-id">Pending</dd>
+              </div>
+              <div>
+                <dt>Confirmed for</dt>
+                <dd id="complete-customer-name">Customer</dd>
+              </div>
+              <div>
+                <dt>Delivery area</dt>
+                <dd id="complete-customer-place">Kerala delivery belt</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="completion-card reveal-on-scroll">
+            <p class="eyebrow">What happens next</p>
+            <div class="completion-steps">
+              <article>
+                <strong>1. Harvest prep</strong>
+                <p>Your trays move into the next cut and packing window.</p>
+              </article>
+              <article>
+                <strong>2. Route planning</strong>
+                <p>Delivery timing is grouped by area so the product travels less and arrives fresher.</p>
+              </article>
+              <article>
+                <strong>3. Doorstep handoff</strong>
+                <p>Use the guides page for storage and serving ideas while you wait for the box.</p>
+              </article>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

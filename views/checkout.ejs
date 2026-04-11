@@ -10,17 +10,31 @@
     robotsContent,
     structuredData,
     pageScripts: ['/checkout.js'],
-    loadRazorpay: true
+    loadRazorpay: true,
+    protectUi: false
   }) %>
 </head>
 <body class="page">
   <%- include('partials/nav') %>
 
   <main class="page-main">
-    <section class="page-hero shell">
-      <p class="eyebrow">Checkout</p>
-      <h1>Add your delivery details before payment.</h1>
-      <p class="lede">Review your tray selection, enter your address and contact details, and then pay securely with Razorpay.</p>
+    <section class="page-hero page-hero--poster shell">
+      <div class="page-hero__copy">
+        <p class="eyebrow">Checkout</p>
+        <h1>Add your delivery details before payment.</h1>
+        <p class="lede">Review your tray selection, enter your address and contact details, and then pay securely with Razorpay.</p>
+      </div>
+
+      <div class="page-hero__aside">
+        <div class="hero-aside-card">
+          <span>Secure checkout</span>
+          <strong>Your order is priced on the server, then confirmed through Razorpay.</strong>
+        </div>
+        <div class="hero-aside-card hero-aside-card--soft">
+          <span>What we need</span>
+          <strong>Name, phone, address, place, pincode, and an optional landmark.</strong>
+        </div>
+      </div>
     </section>
 
     <section class="section section--tint">

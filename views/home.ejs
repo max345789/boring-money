@@ -32,6 +32,15 @@
               <li><%= item %></li>
             <% }) %>
           </ul>
+
+          <div class="stat-strip hero-stat-strip">
+            <% site.featuredStats.forEach((stat) => { %>
+              <article class="stat-pill stat-pill--soft">
+                <strong><%= stat.value %></strong>
+                <span><%= stat.label %></span>
+              </article>
+            <% }) %>
+          </div>
         </div>
 
         <div class="hero-visual reveal-on-scroll">
@@ -46,6 +55,10 @@
           <div class="hero-note">
             <span>Hyperlocal delivery belt</span>
             <strong>Harvested locally and delivered fast across the Pattambi-Malappuram side of Kerala.</strong>
+          </div>
+          <div class="hero-floating-card">
+            <p>Next delivery rhythm</p>
+            <strong>Weekly doorstep drop with fresh trays picked for real home meals.</strong>
           </div>
         </div>
       </div>

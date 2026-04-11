@@ -15,10 +15,23 @@
   <%- include('partials/nav') %>
 
   <main class="page-main">
-    <section class="page-hero shell">
-      <p class="eyebrow">Shop</p>
-      <h1>Buy fresh microgreens directly from the grower.</h1>
-      <p class="lede">Choose a weekly plan for the best value or place a one-time order when you want to try the range first.</p>
+    <section class="page-hero page-hero--poster shell">
+      <div class="page-hero__copy">
+        <p class="eyebrow">Shop</p>
+        <h1>Buy fresh microgreens directly from the grower.</h1>
+        <p class="lede">Choose a weekly plan for the best value or place a one-time order when you want to try the range first.</p>
+      </div>
+
+      <div class="page-hero__aside">
+        <div class="hero-aside-card">
+          <span>Built for direct ordering</span>
+          <strong>Select trays, confirm your address, then move straight into secure payment.</strong>
+        </div>
+        <div class="hero-aside-card hero-aside-card--soft">
+          <span>Service belt</span>
+          <strong>Pattambi, Valanchery, Pallipuram, and Pulamanthole.</strong>
+        </div>
+      </div>
     </section>
 
     <section class="section section--tint" id="shop">
@@ -112,7 +125,7 @@
     <section class="section shell">
       <div class="content-grid content-grid--three">
         <% site.deliveryZones.forEach((zone) => { %>
-          <article class="content-block reveal-on-scroll">
+          <article class="content-block content-block--airy reveal-on-scroll">
             <h3><%= zone %></h3>
             <p>Ask about timing, tray mix, and recurring delivery windows if you need a custom order rhythm.</p>
           </article>

@@ -90,6 +90,20 @@ test('checkout route renders directly', async (t) => {
   );
 });
 
+test('order complete route renders directly', async (t) => {
+  const { app, server, baseUrl } = await createTestServer();
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/order-complete`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Your microgreens are booked into the next harvest cycle/);
+  assert.match(html, /Payment ID/);
+  assert.doesNotMatch(html, /<script src="\/protect\.js" defer><\/script>/);
+});
+
 test('subscriber API accepts valid submissions and deduplicates emails', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 

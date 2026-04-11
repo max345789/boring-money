@@ -4,6 +4,7 @@ const currency = new Intl.NumberFormat('en-IN', {
 });
 
 const checkoutStorageKey = 'sprigandsoil.checkout';
+const completedOrderStorageKey = 'sprigandsoil.lastOrder';
 
 const products = [
   { id: 'sunflower', name: 'Sunflower Crunch', priceInPaise: 19900 },
@@ -323,12 +324,18 @@ async function openRazorpayCheckout(order, customer) {
       handler: async (paymentResponse) => {
         try {
           const verification = await verifyRazorpayPayment(paymentResponse);
-          localStorage.removeItem(checkoutStorageKey);
-          setPaymentStatus(
-            'success',
-            `${verification.message} Payment ID: ${verification.paymentId}.`
+          sessionStorage.setItem(
+            completedOrderStorageKey,
+            JSON.stringify({
+              paymentId: verification.paymentId,
+              orderId: verification.orderId,
+              verifiedAt: new Date().toISOString(),
+              customer,
+              order
+            })
           );
-          document.getElementById('checkout-form')?.reset();
+          localStorage.removeItem(checkoutStorageKey);
+          window.location.href = `/order-complete?payment_id=${encodeURIComponent(verification.paymentId)}&order_id=${encodeURIComponent(verification.orderId)}`;
         } catch (error) {
           setPaymentStatus('error', error.message);
         } finally {
