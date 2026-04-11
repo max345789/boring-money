@@ -83,6 +83,11 @@ test('checkout route renders directly', async (t) => {
   assert.match(html, /Pay with Razorpay/);
   assert.doesNotMatch(html, /<script src="\/protect\.js" defer><\/script>/);
   assert.equal(response.headers.get('cross-origin-opener-policy'), 'same-origin-allow-popups');
+  assert.match(response.headers.get('content-security-policy') || '', /https:\/\/cdn\.razorpay\.com/);
+  assert.match(
+    response.headers.get('content-security-policy') || '',
+    /https:\/\/lumberjack\.razorpay\.com/
+  );
 });
 
 test('subscriber API accepts valid submissions and deduplicates emails', async (t) => {

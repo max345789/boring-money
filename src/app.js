@@ -311,7 +311,8 @@ function createApp(options = {}) {
           scriptSrc: [
             "'self'",
             'https://challenges.cloudflare.com',
-            'https://checkout.razorpay.com'
+            'https://checkout.razorpay.com',
+            'https://cdn.razorpay.com'
           ],
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
@@ -320,7 +321,8 @@ function createApp(options = {}) {
             "'self'",
             'https://challenges.cloudflare.com',
             'https://api.razorpay.com',
-            'https://checkout.razorpay.com'
+            'https://checkout.razorpay.com',
+            'https://lumberjack.razorpay.com'
           ],
           frameSrc: [
             "'self'",
