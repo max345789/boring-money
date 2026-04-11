@@ -1,139 +1,182 @@
-// Scroll reveal for home cards
-const homeObserver = new IntersectionObserver((entries) => {
-  entries.forEach((entry, index) => {
-    if (entry.isIntersecting) {
-      setTimeout(() => entry.target.classList.add('visible'), index * 80);
-    }
-  });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.what-card').forEach((element) => homeObserver.observe(element));
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Simple Matter.js setup for the hero background.
-  if (window.Matter) {
-    const { Engine, Render, Runner, Bodies, Composite } = window.Matter;
-    const heroSection = document.querySelector('.hero');
-    const canvas = document.getElementById('physics-canvas');
-
-    if (heroSection && canvas) {
-      const width = heroSection.clientWidth;
-      const height = heroSection.clientHeight;
-      const engine = Engine.create({ gravity: { x: 0, y: 0.3 } });
-      const render = Render.create({
-        canvas,
-        engine,
-        options: { width, height, background: 'transparent', wireframes: false }
-      });
-
-      const palette = ['#c8c4bb', '#a38c4d', '#dcd8cd'];
-      const shapes = [];
-
-      for (let index = 0; index < 12; index += 1) {
-        const radius = Math.random() * 14 + 6;
-        const x = Math.random() * width;
-        const y = Math.random() * -800 - 100;
-        const sides = Math.floor(Math.random() * 3) + 3;
-
-        shapes.push(
-          Bodies.polygon(x, y, sides, radius, {
-            restitution: 0.4,
-            friction: 0.3,
-            frictionAir: 0.02,
-            render: {
-              fillStyle: palette[Math.floor(Math.random() * palette.length)],
-              opacity: 0.12
-            }
-          })
-        );
-      }
-
-      const ground = Bodies.rectangle(width / 2, height + 50, width * 2, 100, {
-        isStatic: true,
-        render: { visible: false }
-      });
-      const wallLeft = Bodies.rectangle(-50, height / 2, 100, height * 2, {
-        isStatic: true,
-        render: { visible: false }
-      });
-      const wallRight = Bodies.rectangle(width + 50, height / 2, 100, height * 2, {
-        isStatic: true,
-        render: { visible: false }
-      });
-
-      Composite.add(engine.world, [...shapes, ground, wallLeft, wallRight]);
-      Render.run(render);
-      Runner.run(Runner.create(), engine);
-    }
-  }
-
-  const nav = document.querySelector('nav');
-  if (nav) {
-    const hamburger = document.createElement('button');
-    hamburger.className = 'hamburger';
-    hamburger.setAttribute('aria-label', 'Menu');
-    hamburger.innerHTML = '<span></span><span></span><span></span>';
-    nav.appendChild(hamburger);
-
-    const overlay = document.createElement('div');
-    overlay.className = 'mobile-overlay';
-    overlay.innerHTML = `
-      <a href="/">Home</a>
-      <a href="/issues">Issues</a>
-      <a href="/about">About</a>
-      <a href="/playbooks">Playbooks</a>
-      <a href="/community">Community</a>
-      <a href="/advertise">Advertise</a>
-      <a href="/subscribe" class="mob-cta">Subscribe — Free</a>
-    `;
-    document.body.appendChild(overlay);
-
-    hamburger.addEventListener('click', () => {
-      hamburger.classList.toggle('active');
-      overlay.classList.toggle('active');
-      document.body.style.overflow = overlay.classList.contains('active') ? 'hidden' : '';
-    });
-
-    overlay.querySelectorAll('a').forEach((link) => {
-      link.addEventListener('click', () => {
-        hamburger.classList.remove('active');
-        overlay.classList.remove('active');
-        document.body.style.overflow = '';
-      });
-    });
-  }
+const currency = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD'
 });
 
-// Existing content protection behavior preserved.
-document.addEventListener('contextmenu', (event) => event.preventDefault());
-document.addEventListener('copy', (event) => event.preventDefault());
-document.addEventListener('cut', (event) => event.preventDefault());
-document.addEventListener('dragstart', (event) => event.preventDefault());
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'F12') {
-    event.preventDefault();
-    return false;
+const products = [
+  { id: 'sunflower', name: 'Sunflower Crunch', price: 8 },
+  { id: 'broccoli', name: 'Broccoli Shield', price: 9 },
+  { id: 'radish', name: 'Radish Ignite', price: 8 },
+  { id: 'pea', name: 'Pea Tendril Sweet', price: 10 }
+];
+
+const quantities = Object.fromEntries(products.map((product) => [product.id, 0]));
+let plan = 'weekly';
+
+function formatCurrency(value) {
+  return currency.format(value);
+}
+
+function buildOrderHref(items, selectedPlan, subject) {
+  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const discount = selectedPlan === 'weekly' ? subtotal * 0.1 : 0;
+  const shipping = subtotal === 0 || subtotal >= 32 || selectedPlan === 'weekly' ? 0 : 6;
+  const total = subtotal - discount + shipping;
+
+  const body = [
+    'Hello Sprig & Soil,',
+    '',
+    `I want to buy a ${selectedPlan === 'weekly' ? 'weekly microgreens delivery' : 'one-time microgreens order'}.`,
+    '',
+    ...items.map(
+      (item) =>
+        `- ${item.name}: ${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`
+    ),
+    '',
+    `Subtotal: ${formatCurrency(subtotal)}`,
+    discount > 0 ? `Weekly savings: -${formatCurrency(discount)}` : null,
+    `Delivery: ${shipping === 0 ? 'Included' : formatCurrency(shipping)}`,
+    `Total: ${formatCurrency(total)}`,
+    '',
+    'Name:',
+    'Phone:',
+    'Preferred delivery day:',
+    'Address:'
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  return `mailto:orders@sprigandsoil.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function getSelectedItems() {
+  return products
+    .filter((product) => quantities[product.id] > 0)
+    .map((product) => ({
+      ...product,
+      quantity: quantities[product.id],
+      total: quantities[product.id] * product.price
+    }));
+}
+
+function updateSummary() {
+  const selectedItems = getSelectedItems();
+  const summaryList = document.getElementById('summary-list');
+  const summaryEmpty = document.getElementById('summary-empty');
+  const itemsEl = document.getElementById('summary-items');
+  const subtotalEl = document.getElementById('summary-subtotal');
+  const savingsEl = document.getElementById('summary-savings');
+  const savingsLabelEl = document.getElementById('summary-savings-label');
+  const deliveryEl = document.getElementById('summary-delivery');
+  const totalEl = document.getElementById('summary-total');
+  const buySelectedEl = document.getElementById('buy-selected');
+  const finalBuyLinkEl = document.getElementById('final-buy-link');
+
+  summaryList.querySelectorAll('.summary-row--item').forEach((element) => element.remove());
+
+  if (selectedItems.length === 0) {
+    summaryEmpty.hidden = false;
+  } else {
+    summaryEmpty.hidden = true;
+
+    selectedItems.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'summary-row summary-row--item';
+      row.innerHTML = `<span>${item.name} x ${item.quantity}</span><strong>${formatCurrency(item.total)}</strong>`;
+      summaryList.prepend(row);
+    });
   }
 
-  if (event.ctrlKey && event.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) {
-    event.preventDefault();
-    return false;
+  const itemCount = selectedItems.reduce((count, item) => count + item.quantity, 0);
+  const subtotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+  const discount = plan === 'weekly' ? subtotal * 0.1 : 0;
+  const shipping = subtotal === 0 || subtotal >= 32 || plan === 'weekly' ? 0 : 6;
+  const total = subtotal - discount + shipping;
+
+  itemsEl.textContent = String(itemCount);
+  subtotalEl.textContent = formatCurrency(subtotal);
+  savingsLabelEl.textContent = plan === 'weekly' ? 'Weekly savings' : 'Savings';
+  savingsEl.textContent = discount > 0 ? `-${formatCurrency(discount)}` : formatCurrency(0);
+  deliveryEl.textContent = shipping === 0 ? 'Included' : formatCurrency(shipping);
+  totalEl.textContent = formatCurrency(total);
+
+  if (selectedItems.length === 0) {
+    buySelectedEl.classList.add('is-disabled');
+    buySelectedEl.href = '#shop';
+    buySelectedEl.textContent = 'Choose Your Trays First';
+    finalBuyLinkEl.href = '#shop';
+    finalBuyLinkEl.textContent = 'Buy Microgreens Now';
+  } else {
+    const orderHref = buildOrderHref(selectedItems, plan, 'Buy Microgreens');
+    buySelectedEl.classList.remove('is-disabled');
+    buySelectedEl.href = orderHref;
+    buySelectedEl.textContent = 'Buy Selected Microgreens';
+    finalBuyLinkEl.href = orderHref;
+    finalBuyLinkEl.textContent = 'Complete Your Order';
+  }
+}
+
+function updateSingleBuyLinks() {
+  document.querySelectorAll('[data-role="buy-single"]').forEach((link) => {
+    const productCard = link.closest('.product');
+    if (!productCard) return;
+
+    const product = products.find((item) => item.id === productCard.dataset.id);
+    if (!product) return;
+
+    link.href = buildOrderHref(
+      [{ ...product, quantity: 1, total: product.price }],
+      'once',
+      `Buy ${product.name}`
+    );
+  });
+}
+
+function updateQuantity(productId, nextValue) {
+  quantities[productId] = Math.max(0, nextValue);
+
+  const productCard = document.querySelector(`.product[data-id="${productId}"]`);
+  const quantityNode = productCard?.querySelector('[data-role="quantity"]');
+  const decreaseButton = productCard?.querySelector('[data-action="decrease"]');
+
+  if (quantityNode) {
+    quantityNode.textContent = String(quantities[productId]);
   }
 
-  if (event.ctrlKey && ['u', 'U', 's', 'S'].includes(event.key)) {
-    event.preventDefault();
-    return false;
+  if (decreaseButton) {
+    decreaseButton.disabled = quantities[productId] === 0;
   }
 
-  if (event.metaKey && event.altKey && ['i', 'I', 'j', 'J', 'c', 'C'].includes(event.key)) {
-    event.preventDefault();
-    return false;
-  }
+  updateSummary();
+}
 
-  if (event.metaKey && ['u', 'U', 's', 'S'].includes(event.key)) {
-    event.preventDefault();
-    return false;
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.plan-switch button').forEach((button) => {
+    button.addEventListener('click', () => {
+      plan = button.dataset.plan || 'weekly';
 
-  return true;
+      document.querySelectorAll('.plan-switch button').forEach((otherButton) => {
+        otherButton.classList.toggle('is-active', otherButton === button);
+      });
+
+      updateSummary();
+    });
+  });
+
+  document.querySelectorAll('.product').forEach((productCard) => {
+    const productId = productCard.dataset.id;
+    const increaseButton = productCard.querySelector('[data-action="increase"]');
+    const decreaseButton = productCard.querySelector('[data-action="decrease"]');
+
+    increaseButton?.addEventListener('click', () => {
+      updateQuantity(productId, quantities[productId] + 1);
+    });
+
+    decreaseButton?.addEventListener('click', () => {
+      updateQuantity(productId, quantities[productId] - 1);
+    });
+  });
+
+  updateSingleBuyLinks();
+  updateSummary();
 });

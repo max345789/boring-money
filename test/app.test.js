@@ -39,7 +39,8 @@ test('home page renders successfully', async (t) => {
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /BoringMoney — The Business of Boring/);
+  assert.match(html, /Sprig &amp; Soil/);
+  assert.match(html, /Buy Fresh Microgreens/);
 });
 
 test('issue detail page renders by slug', async (t) => {
@@ -51,8 +52,8 @@ test('issue detail page renders by slug', async (t) => {
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /Car washes/);
-  assert.match(html, /The Boring Score/);
+  assert.match(html, /Harvest box summary/);
+  assert.match(html, /Microgreens/);
 });
 
 test('issue clean route does not redirect to html suffix', async (t) => {
@@ -146,8 +147,8 @@ test('advertise page renders from the custom HTML route', async (t) => {
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /Advertise with/);
-  assert.match(html, /Get in Touch/);
+  assert.match(html, /Buy Microgreens/);
+  assert.match(html, /Ask About Office or Cafe Supply/);
 });
 
 test('local Matter.js asset is served from the app', async (t) => {
