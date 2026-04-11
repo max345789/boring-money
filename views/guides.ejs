@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="page-hero shell">
+      <p class="eyebrow">Recipes and pairings</p>
+      <h1>Show customers exactly how to use the product once it arrives.</h1>
+      <p class="lede">The fastest way to improve conversion on a food site is to remove uncertainty. These pairings explain how each tray fits into a normal week.</p>
+    </section>
+
+    <section class="section shell">
+      <div class="stack-list">
+        <% products.forEach((product) => { %>
+          <article class="content-row content-row--product reveal-on-scroll">
+            <div>
+              <span class="pill pill--soft"><%= product.label %></span>
+              <h3><%= product.name %></h3>
+            </div>
+            <p><%= product.flavor %></p>
+            <p><%= product.benefit %></p>
+            <p><strong>Use it like this:</strong> <%= product.usage %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section section--tint">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">Meal moments</p>
+          <h2>Three practical ways microgreens become part of a routine.</h2>
+        </div>
+
+        <div class="content-grid content-grid--three">
+          <% site.guideMoments.forEach((moment) => { %>
+            <article class="content-block reveal-on-scroll">
+              <h3><%= moment.title %></h3>
+              <p><%= moment.body %></p>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="section-heading">
+        <p class="eyebrow">Supply</p>
+        <h2>Not just for home kitchens.</h2>
+      </div>
+
+      <div class="content-grid content-grid--three">
+        <% site.wholesaleNotes.forEach((note) => { %>
+          <article class="content-block reveal-on-scroll">
+            <h3><%= note %></h3>
+            <p>Use the contact page if you need recurring supply for service, pantry programs, or larger weekly demand.</p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

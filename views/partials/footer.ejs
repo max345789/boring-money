@@ -1,20 +1,39 @@
 <footer class="site-footer">
-  <div class="site-footer__brand">
-    <div class="brandmark brandmark--footer">
-      <span class="brandmark__name">Boring</span><span class="brandmark__accent">Money</span>
+  <div class="site-footer__inner shell">
+    <div class="site-footer__brand">
+      <a class="brandmark brandmark--footer" href="/">
+        <span class="brandmark__leaf" aria-hidden="true"></span>
+        <span class="brandmark__text">
+          <span class="brandmark__name">Sprig</span>
+          <span class="brandmark__accent">&amp; Soil</span>
+        </span>
+      </a>
+      <p><%= site.shortDescription %></p>
+      <a class="site-footer__email" href="mailto:<%= site.supportEmail %>"><%= site.supportEmail %></a>
     </div>
-    <p><%= site.shortDescription %></p>
+
+    <nav class="site-footer__links" aria-label="Footer navigation">
+      <% site.footerNav.forEach((item) => { %>
+        <a href="<%= item.href %>"><%= item.label %></a>
+      <% }) %>
+    </nav>
+
+    <div class="site-footer__meta">
+      <% site.promiseStrip.forEach((item) => { %>
+        <span><%= item %></span>
+      <% }) %>
+      <span>© <%= new Date().getFullYear() %> <%= site.name %></span>
+    </div>
   </div>
 
-  <nav class="site-footer__links" aria-label="Footer navigation">
-    <a href="/issues">Issues</a>
-    <a href="/playbooks">Playbooks</a>
-    <a href="/community">Community</a>
-    <a href="/subscribe">Subscribe</a>
-  </nav>
-
-  <div class="site-footer__meta">
-    <span>Production-ready MVP</span>
-    <span>© <%= new Date().getFullYear() %> <%= site.name %></span>
+  <div class="site-footer__areas shell">
+    <span>Service areas:</span>
+    <% site.areas.forEach((area, index) => { %>
+      <a href="<%= area.href %>"><%= area.label %></a><%= index < site.areas.length - 1 ? ' · ' : '' %>
+    <% }) %>
   </div>
+
+  <a class="whatsapp-float" href="<%= site.whatsappHref %>" aria-label="Order on WhatsApp">
+    Order on WhatsApp
+  </a>
 </footer>

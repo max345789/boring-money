@@ -2,13 +2,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= pageTitle %></title>
 <meta name="description" content="<%= pageDescription %>">
-<meta name="theme-color" content="#0a0d12">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="geo.region" content="IN-KL">
+<meta name="geo.placename" content="Pattambi, Kerala">
+<meta name="language" content="en-IN">
+<meta name="theme-color" content="#f4efe4">
 <meta property="og:title" content="<%= pageTitle %>">
 <meta property="og:description" content="<%= pageDescription %>">
 <meta property="og:type" content="website">
+<meta property="og:url" content="<%= canonicalUrl %>">
+<meta property="og:image" content="<%= ogImage %>">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<%= pageTitle %>">
+<meta name="twitter:description" content="<%= pageDescription %>">
+<meta name="twitter:image" content="<%= ogImage %>">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="<%= canonicalUrl %>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared.css">
 <script src="/app.js" defer></script>
+<% if (typeof pageScripts !== 'undefined') { %>
+  <% pageScripts.forEach((scriptPath) => { %>
+    <script src="<%= scriptPath %>" defer></script>
+  <% }) %>
+<% } %>
+<% if (typeof loadRazorpay !== 'undefined' && loadRazorpay) { %>
+  <link rel="preconnect" href="https://checkout.razorpay.com">
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<% } %>
+<% structuredData.forEach((item) => { %>
+  <script type="application/ld+json"><%- JSON.stringify(item) %></script>
+<% }) %>

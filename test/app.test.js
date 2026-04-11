@@ -40,23 +40,11 @@ test('home page renders successfully', async (t) => {
 
   assert.equal(response.status, 200);
   assert.match(html, /Sprig &amp; Soil/);
-  assert.match(html, /Buy Fresh Microgreens/);
+  assert.match(html, /Start weekly delivery/i);
+  assert.match(html, /Serving Pattambi, Valanchery, Pallipuram &amp; Pulamanthole/);
 });
 
-test('issue detail page renders by slug', async (t) => {
-  const { app, server, baseUrl } = await createTestServer();
-
-  t.after(() => closeTestServer({ app, server }));
-
-  const response = await fetch(`${baseUrl}/issues/car-washes`);
-  const html = await response.text();
-
-  assert.equal(response.status, 200);
-  assert.match(html, /Harvest box summary/);
-  assert.match(html, /Microgreens/);
-});
-
-test('issue clean route does not redirect to html suffix', async (t) => {
+test('legacy how it works alias redirects to the canonical page URL', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
   t.after(() => closeTestServer({ app, server }));
@@ -65,8 +53,21 @@ test('issue clean route does not redirect to html suffix', async (t) => {
     redirect: 'manual'
   });
 
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/how-it-works');
+});
+
+test('canonical how it works route renders directly', async (t) => {
+  const { app, server, baseUrl } = await createTestServer();
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/how-it-works`);
+  const html = await response.text();
+
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('location'), null);
+  assert.match(html, /From harvest tray to customer kitchen/);
+  assert.match(html, /How it works/i);
 });
 
 test('subscriber API accepts valid submissions and deduplicates emails', async (t) => {
@@ -138,17 +139,48 @@ test('subscriber API rejects invalid payloads', async (t) => {
   assert.match(body.error, /valid email/i);
 });
 
-test('advertise page renders from the custom HTML route', async (t) => {
+test('legacy contact alias redirects to the canonical contact page URL', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
   t.after(() => closeTestServer({ app, server }));
 
-  const response = await fetch(`${baseUrl}/advertise.html`);
+  const response = await fetch(`${baseUrl}/advertise.html`, {
+    redirect: 'manual'
+  });
+
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get('location'), '/contact');
+});
+
+test('location landing page renders with local SEO copy', async (t) => {
+  const { app, server, baseUrl } = await createTestServer();
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/microgreens-pattambi`);
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /Buy Microgreens/);
-  assert.match(html, /Ask About Office or Cafe Supply/);
+  assert.match(html, /Fresh Microgreens Delivered Weekly in Pattambi/);
+  assert.match(html, /Bharathapuzha/);
+  assert.match(html, /Order on WhatsApp/);
+});
+
+test('blog index and crawl files render successfully', async (t) => {
+  const { app, server, baseUrl } = await createTestServer();
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const blogResponse = await fetch(`${baseUrl}/blog`);
+  const robotsResponse = await fetch(`${baseUrl}/robots.txt`);
+  const sitemapResponse = await fetch(`${baseUrl}/sitemap.xml`);
+
+  assert.equal(blogResponse.status, 200);
+  assert.match(await blogResponse.text(), /Sprig &amp; Soil blog/);
+  assert.equal(robotsResponse.status, 200);
+  assert.match(await robotsResponse.text(), /Sitemap: https:\/\/sprigandsoil.in\/sitemap.xml/);
+  assert.equal(sitemapResponse.status, 200);
+  assert.match(await sitemapResponse.text(), /https:\/\/sprigandsoil.in\/microgreens-pattambi/);
 });
 
 test('local Matter.js asset is served from the app', async (t) => {
@@ -517,7 +549,7 @@ test('inquiry form redirects use clean routes for invalid and success states', a
     redirect: 'manual'
   });
   assert.equal(invalidResponse.status, 302);
-  assert.equal(invalidResponse.headers.get('location'), '/advertise?status=inquiry-invalid');
+  assert.equal(invalidResponse.headers.get('location'), '/contact?status=inquiry-invalid');
 
   const successResponse = await fetch(`${baseUrl}/inquiries`, {
     method: 'POST',
@@ -529,7 +561,7 @@ test('inquiry form redirects use clean routes for invalid and success states', a
     redirect: 'manual'
   });
   assert.equal(successResponse.status, 302);
-  assert.equal(successResponse.headers.get('location'), '/advertise?status=inquiry-success');
+  assert.equal(successResponse.headers.get('location'), '/contact?status=inquiry-success');
 });
 
 test('inquiry rate limit redirect uses clean route', async (t) => {
@@ -564,7 +596,7 @@ test('inquiry rate limit redirect uses clean route', async (t) => {
   });
 
   assert.equal(limitedResponse.status, 302);
-  assert.equal(limitedResponse.headers.get('location'), '/advertise?status=inquiry-rate-limited');
+  assert.equal(limitedResponse.headers.get('location'), '/contact?status=inquiry-rate-limited');
 });
 
 test('runtime config endpoint exposes turnstile site key when enabled', async (t) => {

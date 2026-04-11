@@ -1,11 +1,3 @@
-function formatCounterValue(value, prefix, suffix) {
-  if (value >= 100000) {
-    return `${prefix}${Math.round(value / 1000)}k${suffix}`;
-  }
-
-  return `${prefix}${new Intl.NumberFormat('en-US').format(value)}${suffix}`;
-}
-
 function setupRevealObserver() {
   const revealables = document.querySelectorAll('.reveal-on-scroll');
 
@@ -26,48 +18,6 @@ function setupRevealObserver() {
   );
 
   revealables.forEach((element) => observer.observe(element));
-}
-
-function setupCounters() {
-  const counters = document.querySelectorAll('[data-counter-value]');
-
-  if (!counters.length) {
-    return;
-  }
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) {
-          return;
-        }
-
-        const element = entry.target;
-        const target = Number.parseInt(element.dataset.counterValue || '0', 10);
-        const prefix = element.dataset.prefix || '';
-        const suffix = element.dataset.suffix || '';
-        const duration = 900;
-        const startedAt = performance.now();
-
-        function tick(now) {
-          const progress = Math.min((now - startedAt) / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const current = Math.round(target * eased);
-          element.textContent = formatCounterValue(current, prefix, suffix);
-
-          if (progress < 1) {
-            window.requestAnimationFrame(tick);
-          }
-        }
-
-        window.requestAnimationFrame(tick);
-        observer.unobserve(element);
-      });
-    },
-    { threshold: 0.3 }
-  );
-
-  counters.forEach((counter) => observer.observe(counter));
 }
 
 function setupNavigation() {
@@ -92,6 +42,16 @@ function setupNavigation() {
 
   panel.querySelectorAll('a').forEach((link) => {
     link.addEventListener('click', closeNav);
+  });
+
+  document.addEventListener('click', (event) => {
+    if (header.dataset.open !== 'true') {
+      return;
+    }
+
+    if (!header.contains(event.target)) {
+      closeNav();
+    }
   });
 
   document.addEventListener('keydown', (event) => {
@@ -162,6 +122,5 @@ function setupNewsletterForms() {
 document.addEventListener('DOMContentLoaded', () => {
   setupNavigation();
   setupRevealObserver();
-  setupCounters();
   setupNewsletterForms();
 });

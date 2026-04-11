@@ -25,7 +25,7 @@
     <input type="email" name="email" placeholder="you@example.com" autocomplete="email" required>
   </label>
 
-  <button class="button button--primary" type="submit"><%= typeof submitLabel !== 'undefined' ? submitLabel : 'Join Free' %></button>
+  <button class="button button-primary" type="submit"><%= typeof submitLabel !== 'undefined' ? submitLabel : 'Join Free' %></button>
 
   <% if (typeof showFeedback !== 'undefined' && showFeedback && feedback) { %>
     <p class="form-status form-status--<%= feedback.tone %>" role="status"><%= feedback.message %></p>

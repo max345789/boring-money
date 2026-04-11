@@ -2,175 +2,172 @@
 <html lang="en">
 <head>
   <%- include('partials/head', {
-    pageTitle: `${site.name} | ${site.shortDescription}`,
-    pageDescription: site.shortDescription
+    pageTitle: pageTitle,
+    pageDescription: pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
   }) %>
 </head>
-<body class="page page--home">
-  <div class="page-frame"></div>
+<body class="page">
   <%- include('partials/nav') %>
 
-  <main>
-    <section class="hero">
-      <div class="hero__copy">
-        <p class="eyebrow"><%= site.hero.eyebrow %></p>
-        <h1><%= site.hero.headline %></h1>
-        <p class="lede"><%= site.hero.body %></p>
+  <main class="page-main">
+    <section class="hero-band">
+      <div class="hero-band__inner shell">
+        <div class="hero-copy reveal-on-scroll">
+          <p class="eyebrow"><%= site.hero.eyebrow %></p>
+          <h1><%= site.hero.headline %></h1>
+          <p class="lede"><%= site.hero.body %></p>
+          <p class="hero-support"><%= site.home.keywordCopy %></p>
 
-        <div class="hero__actions">
-          <a class="button button--primary" href="<%= site.hero.primaryCta.href %>"><%= site.hero.primaryCta.label %></a>
-          <a class="button button--secondary" href="<%= site.hero.secondaryCta.href %>"><%= site.hero.secondaryCta.label %></a>
+          <div class="hero-actions">
+            <a class="button button-primary" href="/subscribe">Start weekly delivery</a>
+            <a class="button button-secondary" href="/shop">Buy a single box</a>
+          </div>
+
+          <ul class="promise-list">
+            <% site.promiseStrip.forEach((item) => { %>
+              <li><%= item %></li>
+            <% }) %>
+          </ul>
         </div>
 
-        <%- include('partials/newsletter-form', {
-          source: 'home-hero',
-          submitLabel: 'Join Free',
-          showFeedback: false,
-          variant: 'newsletter-form--inline'
-        }) %>
-
-        <p class="microcopy">One free issue per week. No spam. No finance-bro noise.</p>
+        <div class="hero-visual reveal-on-scroll">
+          <div class="hero-visual__frame">
+            <img
+              src="/images/pattambi-microgreens-fresh.jpg"
+              alt="Farm fresh microgreens harvested for weekly delivery in Pattambi Kerala"
+              width="1400"
+              height="933"
+            >
+          </div>
+          <div class="hero-note">
+            <span>Hyperlocal delivery belt</span>
+            <strong>Harvested locally and delivered fast across the Pattambi-Malappuram side of Kerala.</strong>
+          </div>
+        </div>
       </div>
-
-      <aside class="hero__rail">
-        <div class="hero__issue-label">Latest issue · <%= latestIssue.number %></div>
-        <h2><a href="/issues/<%= latestIssue.slug %>"><%= latestIssue.title %></a></h2>
-        <p class="hero__quote"><%= latestIssue.heroQuote %></p>
-
-        <dl class="metric-list">
-          <% latestIssue.metrics.forEach((metric) => { %>
-            <div class="metric-list__item reveal-on-scroll">
-              <dt><%= metric.label %></dt>
-              <dd><%= metric.value %></dd>
-            </div>
-          <% }) %>
-        </dl>
-      </aside>
     </section>
 
-    <section class="section">
+    <section class="section shell">
       <div class="section-heading">
-        <p class="eyebrow">Why it works</p>
-        <h2>One editorial product, three practical outcomes.</h2>
+        <h2><%= site.serviceAreasHeading %></h2>
+        <p><%= site.home.serviceIntro %></p>
       </div>
 
-      <div class="principles-grid">
-        <% site.principles.forEach((principle) => { %>
-          <article class="principle reveal-on-scroll">
-            <h3><%= principle.title %></h3>
-            <p><%= principle.body %></p>
+      <div class="content-grid content-grid--four">
+        <% site.serviceAreas.forEach((area) => { %>
+          <article class="content-block reveal-on-scroll">
+            <h3><%= area.title %></h3>
+            <p><%= area.body %></p>
+            <a class="text-link" href="<%= area.href %>">See delivery details</a>
           </article>
         <% }) %>
       </div>
     </section>
 
-    <section class="section section--contrast">
-      <div class="section-heading">
-        <p class="eyebrow">Featured issue</p>
-        <h2><%= latestIssue.title %> is the cover story right now.</h2>
-      </div>
-
-      <div class="feature-layout">
-        <div class="feature-layout__summary">
-          <p class="lede"><%= latestIssue.summary %></p>
-          <ul class="bullet-list">
-            <% latestIssue.takeaways.forEach((takeaway) => { %>
-              <li><%= takeaway %></li>
-            <% }) %>
-          </ul>
-          <a class="button button--secondary" href="/issues/<%= latestIssue.slug %>">Read the issue</a>
+    <section class="section section--tint">
+      <div class="shell">
+        <div class="section-heading">
+          <h2>Why Sprig &amp; Soil?</h2>
+          <p><%= site.home.whyIntro %></p>
         </div>
 
-        <div class="feature-layout__stats">
-          <% site.stats.forEach((stat) => { %>
-            <article class="stat-block reveal-on-scroll">
-              <strong
-                data-counter-value="<%= stat.value %>"
-                data-prefix="<%= stat.prefix || '' %>"
-                data-suffix="<%= stat.suffix || '' %>"
-              ><%= stat.prefix || '' %>0<%= stat.suffix || '' %></strong>
-              <span><%= stat.label %></span>
+        <div class="content-grid content-grid--three">
+          <% site.principles.forEach((principle) => { %>
+            <article class="content-block reveal-on-scroll">
+              <h3><%= principle.title %></h3>
+              <p><%= principle.body %></p>
             </article>
           <% }) %>
         </div>
       </div>
     </section>
 
-    <section class="section">
+    <section class="section shell">
       <div class="section-heading">
-        <p class="eyebrow">Archive</p>
-        <h2>Published issues and what is coming next.</h2>
+        <h2>How It Works</h2>
+        <p><%= site.home.howItWorksIntro %></p>
       </div>
 
-      <div class="issue-list">
-        <% publishedIssues.forEach((issue) => { %>
-          <article class="issue-row reveal-on-scroll">
-            <div class="issue-row__meta">
-              <span>Issue <%= issue.number %></span>
-              <span><%= issue.tag %></span>
-            </div>
-            <div class="issue-row__content">
-              <h3><a href="/issues/<%= issue.slug %>"><%= issue.title %></a></h3>
-              <p><%= issue.deck %></p>
-            </div>
-            <a class="issue-row__link" href="/issues/<%= issue.slug %>">Open</a>
-          </article>
-        <% }) %>
-
-        <% upcomingIssues.forEach((issue) => { %>
-          <article class="issue-row issue-row--muted reveal-on-scroll">
-            <div class="issue-row__meta">
-              <span>Issue <%= issue.number %></span>
-              <span><%= issue.tag %></span>
-            </div>
-            <div class="issue-row__content">
-              <h3><%= issue.title %></h3>
-              <p><%= issue.deck %></p>
-            </div>
-            <span class="issue-row__link issue-row__link--muted">Soon</span>
+      <div class="content-grid content-grid--four">
+        <% site.steps.forEach((step, index) => { %>
+          <article class="process-step reveal-on-scroll">
+            <span class="process-step__number">0<%= index + 1 %></span>
+            <h3><%= step.title %></h3>
+            <p><%= step.body %></p>
           </article>
         <% }) %>
       </div>
     </section>
 
-    <section class="section section--contrast">
+    <section class="section section--tint">
+      <div class="shell feature-split">
+        <div class="feature-copy">
+          <div class="section-heading section-heading--compact">
+            <h2>This Week&apos;s Box</h2>
+            <p><%= site.home.boxIntro %></p>
+          </div>
+
+          <div class="content-grid content-grid--two">
+            <% products.forEach((product) => { %>
+              <article class="product-preview reveal-on-scroll">
+                <div class="product-preview__meta">
+                  <span class="pill pill--soft"><%= product.label %></span>
+                  <strong>₹<%= (product.priceInPaise / 100).toFixed(0) %></strong>
+                </div>
+                <h3><%= product.name %></h3>
+                <p><%= product.flavor %></p>
+                <span class="product-preview__usage"><%= product.usage %></span>
+              </article>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="feature-media reveal-on-scroll">
+          <img
+            src="/images/kerala-microgreens-growing-trays.jpg"
+            alt="Microgreens growing in soil for delivery across Pattambi and Valanchery Kerala"
+            loading="lazy"
+            width="1200"
+            height="1800"
+          >
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell">
       <div class="section-heading">
-        <p class="eyebrow">Premium add-on</p>
-        <h2>Playbooks for buyers who want operating detail, not inspiration.</h2>
+        <h2>What Our Subscribers Say</h2>
+        <p>Customers reorder because the greens fit breakfast, lunch, dinner, and daily Kerala meal routines without waste.</p>
       </div>
 
-      <div class="playbook-list">
-        <% playbooks.forEach((playbook) => { %>
-          <article class="playbook reveal-on-scroll <%= playbook.status === 'upcoming' ? 'playbook--muted' : '' %>">
-            <span class="pill"><%= playbook.label %></span>
-            <h3><%= playbook.title %></h3>
-            <p><%= playbook.summary %></p>
-            <div class="playbook__footer">
-              <strong><%= playbook.price %></strong>
-              <% if (playbook.status === 'available') { %>
-                <a href="/subscribe">Get access</a>
-              <% } else { %>
-                <span>Coming soon</span>
-              <% } %>
-            </div>
+      <div class="content-grid content-grid--three">
+        <% site.testimonials.forEach((testimonial) => { %>
+          <article class="quote-block reveal-on-scroll">
+            <p>“<%= testimonial.quote %>”</p>
+            <footer>
+              <strong><%= testimonial.author %></strong>
+              <span><%= testimonial.role %></span>
+            </footer>
           </article>
         <% }) %>
       </div>
     </section>
 
-    <section class="section final-cta">
-      <div>
-        <p class="eyebrow">Join free</p>
-        <h2><%= site.finalCta.headline %></h2>
-        <p class="lede"><%= site.finalCta.body %></p>
-      </div>
-
-      <div class="final-cta__form">
-        <%- include('partials/newsletter-form', {
-          source: 'home-final-cta',
-          submitLabel: 'Subscribe free',
-          showFeedback: false
-        }) %>
+    <section class="section shell">
+      <div class="final-cta">
+        <div>
+          <h2>Subscribe Today</h2>
+          <p><%= site.home.subscribeIntro %></p>
+          <p class="small-note">Prefer WhatsApp? Malayalam messages are welcome.</p>
+        </div>
+        <div class="final-cta__actions">
+          <a class="button button-primary" href="/subscribe">See weekly plans</a>
+          <a class="button button-secondary" href="<%= site.whatsappHref %>">Order on WhatsApp</a>
+        </div>
       </div>
     </section>
   </main>

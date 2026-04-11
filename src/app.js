@@ -7,16 +7,19 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('node:crypto');
 const { z } = require('zod');
 
+const {
+  site,
+  products,
+  locationPages,
+  locationPageBySlug,
+  blogPosts,
+  blogPostBySlug
+} = require('./content/micro-site');
 const { createDatabase } = require('./db');
 const { buildMicrogreenOrder, productCatalog } = require('./microgreens');
 const { createNotifier } = require('./notifier');
 const { createRazorpayGateway } = require('./razorpay');
 const { verifyTurnstileToken } = require('./turnstile');
-const {
-  site,
-  findIssueBySlug,
-  getPublishedIssues,
-} = require('./content/site');
 
 const subscriberSchema = z.object({
   firstName: z
@@ -107,12 +110,12 @@ function getSubscriptionFeedback(status) {
     case 'success':
       return {
         tone: 'success',
-        message: 'Subscription confirmed. Your first issue is on the way.'
+        message: 'Subscription confirmed. We will keep you posted on weekly harvest availability.'
       };
     case 'exists':
       return {
         tone: 'info',
-        message: 'You are already subscribed. We updated your profile details.'
+        message: 'You are already on the list. We updated your details.'
       };
     case 'invalid':
       return {
@@ -312,6 +315,9 @@ function createApp(options = {}) {
 
   app.use((req, res, next) => {
     res.locals.site = site;
+    res.locals.products = products;
+    res.locals.locationPages = locationPages;
+    res.locals.blogPosts = blogPosts;
     res.locals.currentPath = req.path;
     res.locals.feedback = getSubscriptionFeedback(req.query.status);
     next();
@@ -329,7 +335,7 @@ function createApp(options = {}) {
     limit: subscribeRateLimit.limit,
     standardHeaders: true,
     legacyHeaders: false,
-    handler: createRateLimitHandler({ redirectTo: '/advertise?status=inquiry-rate-limited' })
+    handler: createRateLimitHandler({ redirectTo: '/contact?status=inquiry-rate-limited' })
   });
   const paymentLimiter = rateLimit({
     windowMs: subscribeRateLimit.windowMs,
@@ -463,9 +469,35 @@ function createApp(options = {}) {
     };
   }
 
-  function sendProjectFile(fileName) {
+  function renderPage(viewName, getLocals = () => ({})) {
     return (req, res) => {
-      res.sendFile(path.join(projectRoot, fileName), sendFileOptions);
+      const locals = getLocals(req);
+      const canonicalPath = locals.canonicalPath || req.path;
+      const structuredData = [site.localBusinessSchema, site.productSchema];
+
+      if (locals.structuredData) {
+        const extras = Array.isArray(locals.structuredData)
+          ? locals.structuredData
+          : [locals.structuredData];
+        structuredData.push(...extras);
+      }
+
+      res.render(viewName, {
+        pageTitle: locals.pageTitle || `${site.name} | ${site.shortDescription}`,
+        pageDescription: locals.pageDescription || site.shortDescription,
+        currentPath: req.path,
+        canonicalPath,
+        canonicalUrl: `${site.siteUrl}${canonicalPath}`,
+        ogImage: locals.ogImage || `${site.siteUrl}${site.defaultOgImage}`,
+        structuredData,
+        ...locals
+      });
+    };
+  }
+
+  function redirectTo(pathname) {
+    return (req, res) => {
+      res.redirect(302, pathname);
     };
   }
 
@@ -561,21 +593,138 @@ function createApp(options = {}) {
       </html>`;
   }
 
-  app.get(['/', '/index.html'], sendProjectFile('index.html'));
-  app.get(['/about', '/about.html'], sendProjectFile('about.html'));
-  app.get(['/issues', '/issues.html'], sendProjectFile('issues.html'));
   app.get(
-    ['/issue-carwash.html', '/issue-carwash', '/issues/car-washes'],
-    sendProjectFile('issue-carwash.html')
+    '/',
+    renderPage('home', () => ({
+      pageTitle: site.home.metaTitle,
+      pageDescription: site.home.metaDescription,
+      canonicalPath: '/'
+    }))
   );
-  app.get(['/playbooks', '/playbooks.html'], sendProjectFile('playbooks.html'));
-  app.get(['/community', '/community.html'], sendProjectFile('community.html'));
-  app.get(['/subscribe', '/subscribe.html'], sendProjectFile('subscribe.html'));
-  app.get(['/advertise', '/advertise.html'], sendProjectFile('advertise.html'));
-  app.get(['/marketplace', '/marketplace.html'], sendProjectFile('marketplace.html'));
-  app.get(['/boring-score', '/boring-score.html'], sendProjectFile('boring-score.html'));
-  app.get('/shared.css', sendProjectFile('shared.css'));
-  app.get('/protect.js', sendProjectFile('protect.js'));
+  app.get('/index.html', redirectTo('/'));
+  app.get('/shop', renderPage('shop', () => ({
+    pageTitle: 'Microgreens Shop | Sprig & Soil Kerala Delivery',
+    pageDescription:
+      'Choose a single box or weekly microgreen delivery for Pattambi, Valanchery, Pallipuram, and Pulamanthole.',
+    canonicalPath: '/shop'
+  })));
+  app.get(['/issues', '/issues.html', '/marketplace', '/marketplace.html'], redirectTo('/shop'));
+  app.get('/about', renderPage('about', () => ({
+    pageTitle: 'About Sprig & Soil',
+    pageDescription:
+      'Learn how Sprig & Soil grows, harvests, and delivers premium microgreens across the Pattambi belt.',
+    canonicalPath: '/about'
+  })));
+  app.get('/about.html', redirectTo('/about'));
+  app.get('/how-it-works', renderPage('how-it-works', () => ({
+    pageTitle: 'How It Works',
+    pageDescription:
+      'See how ordering, harvesting, delivery, and weekly microgreen use work across the Pattambi delivery belt.',
+    canonicalPath: '/how-it-works'
+  })));
+  app.get(
+    ['/playbooks', '/playbooks.html', '/issue-carwash', '/issue-carwash.html', '/issues/car-washes'],
+    redirectTo('/how-it-works')
+  );
+  app.get('/guides', renderPage('guides', () => ({
+    pageTitle: 'Recipes and Pairings',
+    pageDescription:
+      'See practical ways to use microgreens in Kerala breakfasts, lunches, curries, and family meals.',
+    canonicalPath: '/guides'
+  })));
+  app.get(['/community', '/community.html'], redirectTo('/guides'));
+  app.get('/faq', renderPage('faq', () => ({
+    pageTitle: 'Questions and Answers',
+    pageDescription:
+      'Find answers about freshness, delivery, shelf life, subscriptions, WhatsApp ordering, and service areas.',
+    canonicalPath: '/faq'
+  })));
+  app.get(['/boring-score', '/boring-score.html'], redirectTo('/faq'));
+  app.get('/subscribe', renderPage('subscribe', () => ({
+    pageTitle: 'Weekly Microgreen Subscription Kerala | Sprig & Soil',
+    pageDescription:
+      'Start a weekly microgreen subscription for Pattambi, Valanchery, Pallipuram, or Pulamanthole. Fresh harvests and WhatsApp support.',
+    canonicalPath: '/subscribe',
+    pageScripts: ['/backend.js']
+  })));
+  app.get('/subscribe.html', redirectTo('/subscribe'));
+  app.get('/contact', renderPage('contact', () => ({
+    pageTitle: 'Contact and Wholesale',
+    pageDescription:
+      'Contact Sprig & Soil for home ordering help, wholesale supply, office delivery, or chef needs.',
+    canonicalPath: '/contact',
+    pageScripts: ['/backend.js']
+  })));
+  app.get(['/advertise', '/advertise.html'], redirectTo('/contact'));
+  app.get('/blog', renderPage('blog-index', () => ({
+    pageTitle: 'Sprig & Soil Blog | Kerala Microgreens',
+    pageDescription:
+      'Local guides, recipes, delivery updates, and educational articles about microgreens in Kerala.',
+    canonicalPath: '/blog'
+  })));
+  app.get('/blog/:slug', (req, res, next) => {
+    const post = blogPostBySlug.get(req.params.slug);
+
+    if (!post) {
+      next();
+      return;
+    }
+
+    res.render('blog-post', {
+      pageTitle: `${post.title} | ${site.name}`,
+      pageDescription: post.metaDescription,
+      currentPath: '/blog',
+      canonicalPath: post.path,
+      canonicalUrl: `${site.siteUrl}${post.path}`,
+      ogImage: `${site.siteUrl}${site.defaultOgImage}`,
+      structuredData: [
+        site.localBusinessSchema,
+        site.productSchema,
+        {
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: post.title,
+          description: post.metaDescription,
+          author: {
+            '@type': 'Organization',
+            name: site.name
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: site.name
+          },
+          mainEntityOfPage: `${site.siteUrl}${post.path}`,
+          url: `${site.siteUrl}${post.path}`
+        }
+      ],
+      post
+    });
+  });
+  app.get('/microgreens-:area', (req, res, next) => {
+    const page = locationPageBySlug.get(`microgreens-${req.params.area}`);
+
+    if (!page) {
+      next();
+      return;
+    }
+
+    res.render('location', {
+      pageTitle: page.title,
+      pageDescription: page.metaDescription,
+      currentPath: req.path,
+      canonicalPath: page.path,
+      canonicalUrl: `${site.siteUrl}${page.path}`,
+      ogImage: `${site.siteUrl}${site.defaultOgImage}`,
+      structuredData: [site.localBusinessSchema, site.productSchema, page.articleSchema],
+      page
+    });
+  });
+  app.get('/shared.css', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'shared.css'), sendFileOptions);
+  });
+  app.get('/protect.js', (req, res) => {
+    res.sendFile(path.join(projectRoot, 'protect.js'), sendFileOptions);
+  });
   app.get('/vendor/matter.min.js', (req, res) => {
     res.sendFile(
       path.join(projectRoot, 'node_modules', 'matter-js', 'build', 'matter.min.js'),
@@ -605,8 +754,8 @@ function createApp(options = {}) {
 
     res.json({
       status: 'ok',
-      issues: getPublishedIssues().length,
-      playbooks: site.playbooks.length,
+      issues: 0,
+      playbooks: 0,
       subscribers,
       inquiries
     });
@@ -630,24 +779,17 @@ function createApp(options = {}) {
 
   app.get('/api/issues', (req, res) => {
     res.json({
-      issues: site.issues
+      issues: []
     });
   });
 
   app.get('/api/issues/:slug', (req, res) => {
-    const issue = findIssueBySlug(req.params.slug);
-
-    if (!issue) {
-      res.status(404).json({ error: 'Issue not found.' });
-      return;
-    }
-
-    res.json({ issue });
+    res.status(404).json({ error: 'Issue not found.' });
   });
 
   app.get('/api/playbooks', (req, res) => {
     res.json({
-      playbooks: site.playbooks
+      playbooks: []
     });
   });
 
@@ -843,7 +985,7 @@ function createApp(options = {}) {
     const result = await handleInquiry(req.body, req);
 
     if (!result.ok) {
-      res.redirect('/advertise?status=inquiry-invalid');
+      res.redirect('/contact?status=inquiry-invalid');
       return;
     }
 
@@ -851,11 +993,19 @@ function createApp(options = {}) {
       notifySafely(notifier.notifyNewInquiry(result.inquiry));
     }
 
-    res.redirect('/advertise?status=inquiry-success');
+    res.redirect('/contact?status=inquiry-success');
   });
 
   app.use((req, res) => {
-    res.status(404).render('404');
+    res.status(404).render('404', {
+      pageTitle: `${site.name} | Page Not Found`,
+      pageDescription: site.shortDescription,
+      currentPath: req.path,
+      canonicalPath: req.path,
+      canonicalUrl: `${site.siteUrl}${req.path}`,
+      ogImage: `${site.siteUrl}${site.defaultOgImage}`,
+      structuredData: [site.localBusinessSchema, site.productSchema]
+    });
   });
 
   app.use((error, req, res, next) => {
@@ -880,7 +1030,15 @@ function createApp(options = {}) {
       return;
     }
 
-    res.status(500).render('500');
+    res.status(500).render('500', {
+      pageTitle: `${site.name} | Server Error`,
+      pageDescription: site.shortDescription,
+      currentPath: req.path,
+      canonicalPath: req.path,
+      canonicalUrl: `${site.siteUrl}${req.path}`,
+      ogImage: `${site.siteUrl}${site.defaultOgImage}`,
+      structuredData: [site.localBusinessSchema, site.productSchema]
+    });
   });
 
   app.locals.database = database;

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData,
+    pageScripts: ['/home.js'],
+    loadRazorpay: true
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="page-hero shell">
+      <p class="eyebrow">Shop</p>
+      <h1>Buy fresh microgreens directly from the grower.</h1>
+      <p class="lede">Choose a weekly plan for the best value or place a one-time order when you want to try the range first.</p>
+    </section>
+
+    <section class="section section--tint" id="shop">
+      <div class="shell">
+        <div class="section-heading section-heading--split">
+          <div>
+            <p class="eyebrow">Select your trays</p>
+            <h2>Built for quick choice, clear pricing, and direct checkout.</h2>
+          </div>
+
+          <div class="plan-switch" role="tablist" aria-label="Ordering plan">
+            <button type="button" class="is-active" data-plan="weekly">Weekly plan</button>
+            <button type="button" data-plan="once">One-time order</button>
+          </div>
+        </div>
+
+        <div class="shop-layout">
+          <div class="product-list">
+            <% products.forEach((product) => { %>
+              <article class="product product-<%= product.accent %> reveal-on-scroll" data-id="<%= product.id %>">
+                <div class="product-topline">
+                  <span class="pill pill--soft"><%= product.label %></span>
+                  <strong>₹<%= (product.priceInPaise / 100).toFixed(0) %></strong>
+                </div>
+
+                <div class="product-main">
+                  <h3><%= product.name %></h3>
+                  <p class="product-flavor"><%= product.flavor %></p>
+                  <p class="product-benefit"><%= product.benefit %></p>
+                  <p class="product-usage"><%= product.usage %></p>
+                </div>
+
+                <div class="product-controls">
+                  <div class="quantity-picker" aria-label="<%= product.name %> quantity">
+                    <button type="button" data-action="decrease" disabled>-</button>
+                    <span data-role="quantity">0</span>
+                    <button type="button" data-action="increase">+</button>
+                  </div>
+
+                  <button type="button" class="button button-primary product-buy" data-role="buy-single">
+                    Buy this tray
+                  </button>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+
+          <aside class="order-summary">
+            <div>
+              <p class="eyebrow">Order summary</p>
+              <h3>Checkout</h3>
+            </div>
+
+            <div class="summary-list" id="summary-list">
+              <p class="summary-empty" id="summary-empty">Choose one or more trays to see your order total.</p>
+            </div>
+
+            <div class="summary-totals">
+              <div class="summary-row">
+                <span>Items</span>
+                <strong id="summary-items">0</strong>
+              </div>
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <strong id="summary-subtotal">₹0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span id="summary-savings-label">Weekly savings</span>
+                <strong id="summary-savings">₹0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span>Delivery</span>
+                <strong id="summary-delivery">Included</strong>
+              </div>
+              <div class="summary-row summary-row-total">
+                <span>Total</span>
+                <strong id="summary-total">₹0.00</strong>
+              </div>
+            </div>
+
+            <button type="button" class="button button-primary button-block is-disabled" id="buy-selected">
+              Choose Your Trays First
+            </button>
+
+            <p class="payment-status" id="payment-status" hidden></p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="content-grid content-grid--three">
+        <% site.deliveryZones.forEach((zone) => { %>
+          <article class="content-block reveal-on-scroll">
+            <h3><%= zone %></h3>
+            <p>Ask about timing, tray mix, and recurring delivery windows if you need a custom order rhythm.</p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="final-cta">
+        <div>
+          <p class="eyebrow">Ready to pay</p>
+          <h2>Secure checkout with Razorpay, no email handoff.</h2>
+          <p>Your selection stays on-site and opens directly in Razorpay Checkout when you are ready to buy.</p>
+        </div>
+        <div class="final-cta__actions">
+          <button type="button" class="button button-primary" id="final-buy-link">Buy microgreens now</button>
+          <a class="button button-secondary" href="/contact">Need wholesale help?</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

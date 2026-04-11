@@ -2,38 +2,77 @@
 <html lang="en">
 <head>
   <%- include('partials/head', {
-    pageTitle: `About | ${site.name}`,
-    pageDescription: 'Why BoringMoney exists and how each issue is scored.'
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
   }) %>
 </head>
 <body class="page">
-  <div class="page-frame"></div>
   <%- include('partials/nav') %>
 
   <main class="page-main">
-    <section class="section section--narrow">
+    <section class="page-hero shell">
       <p class="eyebrow">About</p>
-      <h1 class="page-title">The editorial product for the quiet economy.</h1>
-      <p class="lede"><%= site.about.manifesto %></p>
+      <h1>Grown for flavor, consistency, and repeat weekly use.</h1>
+      <p class="lede">Sprig &amp; Soil is positioned as a premium but practical microgreens brand: clean indoor growing, small-batch harvests, and a buying experience simple enough for direct customers.</p>
+    </section>
 
-      <div class="prose">
-        <% site.about.body.forEach((paragraph) => { %>
-          <p><%= paragraph %></p>
+    <section class="section section--tint">
+      <div class="shell feature-split">
+        <div class="feature-copy">
+          <div class="section-heading section-heading--compact">
+            <p class="eyebrow">Brand stance</p>
+            <h2>Freshness that feels premium without becoming intimidating.</h2>
+            <p>The goal is not to sell novelty. It is to make nutrient-dense greens easy to understand, easy to order, and easy to use in actual meals.</p>
+          </div>
+
+          <div class="stack-list">
+            <% site.aboutPoints.forEach((point) => { %>
+              <article class="content-row reveal-on-scroll">
+                <h3><%= point.title %></h3>
+                <p><%= point.body %></p>
+              </article>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="feature-media reveal-on-scroll">
+          <img
+            src="/images/kerala-microgreens-growing-trays.jpg"
+            alt="Microgreens growing in soil for local delivery across Kerala"
+            loading="lazy"
+            width="1200"
+            height="1800"
+          >
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="section-heading">
+        <p class="eyebrow">How we work</p>
+        <h2>Three operating principles behind the product.</h2>
+      </div>
+
+      <div class="content-grid content-grid--three">
+        <% site.principles.forEach((item) => { %>
+          <article class="content-block reveal-on-scroll">
+            <h3><%= item.title %></h3>
+            <p><%= item.body %></p>
+          </article>
         <% }) %>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-heading">
-        <p class="eyebrow">The Boring Score</p>
-        <h2>Every business is graded through an ownership lens.</h2>
-      </div>
-
-      <div class="principles-grid">
-        <% site.about.score.forEach((item) => { %>
-          <article class="principle reveal-on-scroll">
-            <h3><%= item.title %></h3>
-            <p><%= item.body %></p>
+    <section class="section shell">
+      <div class="stat-strip">
+        <% site.featuredStats.forEach((stat) => { %>
+          <article class="stat-pill reveal-on-scroll">
+            <strong><%= stat.value %></strong>
+            <span><%= stat.label %></span>
           </article>
         <% }) %>
       </div>

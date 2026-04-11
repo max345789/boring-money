@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="page-hero shell">
+      <p class="eyebrow">How it works</p>
+      <h1>From harvest tray to customer kitchen in a few clear steps.</h1>
+      <p class="lede">This page gives buyers confidence in what happens before and after checkout, which is critical when selling fresh food online.</p>
+    </section>
+
+    <section class="section shell">
+      <div class="content-grid content-grid--four">
+        <% site.steps.forEach((step, index) => { %>
+          <article class="process-step reveal-on-scroll">
+            <span class="process-step__number">0<%= index + 1 %></span>
+            <h3><%= step.title %></h3>
+            <p><%= step.body %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section section--tint">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">Everyday use</p>
+          <h2>What buyers do with the trays once they arrive.</h2>
+        </div>
+
+        <div class="content-grid content-grid--three">
+          <% site.rituals.forEach((ritual) => { %>
+            <article class="content-block reveal-on-scroll">
+              <h3><%= ritual.title %></h3>
+              <p><%= ritual.body %></p>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="section-heading">
+        <p class="eyebrow">Delivery fit</p>
+        <h2>Order formats that support both trial buyers and recurring customers.</h2>
+      </div>
+
+      <div class="stack-list">
+        <% site.deliveryZones.forEach((zone) => { %>
+          <article class="content-row reveal-on-scroll">
+            <h3><%= zone %></h3>
+            <p>We keep the offer simple so customers can understand whether they need a one-time box, weekly delivery, or a recurring business supply plan.</p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="final-cta">
+        <div>
+          <p class="eyebrow">Next step</p>
+          <h2>Use the Shop page when you are ready to order.</h2>
+          <p>The buying flow is separated from the educational pages so customers can learn first, then convert cleanly.</p>
+        </div>
+        <div class="final-cta__actions">
+          <a class="button button-primary" href="/shop">Go to shop</a>
+          <a class="button button-secondary" href="/faq">Read FAQs</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

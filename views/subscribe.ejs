@@ -2,28 +2,65 @@
 <html lang="en">
 <head>
   <%- include('partials/head', {
-    pageTitle: `Subscribe | ${site.name}`,
-    pageDescription: 'Subscribe to BoringMoney for weekly deep dives on cash-flowing businesses.'
+    pageTitle: pageTitle,
+    pageDescription: pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData,
+    pageScripts: ['/backend.js']
   }) %>
 </head>
 <body class="page">
-  <div class="page-frame"></div>
   <%- include('partials/nav') %>
 
   <main class="page-main">
-    <section class="section section--narrow subscribe-shell">
-      <p class="eyebrow">Subscribe</p>
-      <h1 class="page-title">Join the quiet economy.</h1>
-      <p class="lede">One free issue every week. The goal is straightforward: better business judgment and no wasted attention.</p>
+    <section class="page-hero shell">
+      <p class="eyebrow">Weekly subscription</p>
+      <h1>Build the easiest health habit in your week.</h1>
+      <p class="lede">Our weekly microgreen subscription Kerala plan is built for households in Pattambi, Valanchery, Pallipuram, and Pulamanthole that want fresher greens without extra shopping friction.</p>
+    </section>
 
-      <div class="subscribe-card">
-        <%- include('partials/newsletter-form', {
-          source: 'subscribe-page',
-          submitLabel: 'Complete subscription',
-          showFirstName: true,
-          showFeedback: true
-        }) %>
-        <p class="microcopy">Free forever. We never sell your data.</p>
+    <section class="section section--tint">
+      <div class="shell feature-split">
+        <div class="feature-copy">
+          <div class="section-heading section-heading--compact">
+            <h2>Why start with a weekly box?</h2>
+            <p>A subscription keeps fresh greens visible in the fridge, which is what turns good intentions into actual daily use.</p>
+          </div>
+
+          <div class="stack-list">
+            <article class="content-row reveal-on-scroll">
+              <h3>Harvested close to delivery</h3>
+              <p>The whole model exists to keep the freshness window short across the Pattambi delivery belt.</p>
+            </article>
+            <article class="content-row reveal-on-scroll">
+              <h3>Easy to use in Kerala meals</h3>
+              <p>Use the trays with breakfast, lunch, curries, rice bowls, juices, and simple evening plates.</p>
+            </article>
+            <article class="content-row reveal-on-scroll">
+              <h3>WhatsApp-first support</h3>
+              <p>Message in Malayalam or English if you want help choosing trays or confirming the right area.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="contact-card subscribe-card">
+          <h2>Get updates or order now</h2>
+          <p class="small-note">Join the email list for weekly harvest updates, or skip straight to WhatsApp if you are ready.</p>
+
+          <%- include('partials/newsletter-form', {
+            source: 'subscribe-page',
+            submitLabel: 'Join the weekly list',
+            showFirstName: true,
+            showFeedback: true
+          }) %>
+
+          <div class="stacked-cta">
+            <a class="button button-primary button-block" href="<%= site.whatsappHref %>">Order on WhatsApp</a>
+            <a class="button button-secondary button-block" href="/shop">Shop one-time boxes</a>
+          </div>
+        </div>
       </div>
     </section>
   </main>

@@ -111,17 +111,13 @@ function updateSummary() {
 
   if (selectedItems.length === 0 || isPaymentInFlight) {
     buySelectedEl.classList.add('is-disabled');
-    buySelectedEl.href = '#shop';
     buySelectedEl.textContent =
       selectedItems.length === 0 ? 'Choose Your Trays First' : 'Starting Razorpay...';
-    finalBuyLinkEl.href = '#shop';
     finalBuyLinkEl.textContent =
       selectedItems.length === 0 ? 'Buy Microgreens Now' : 'Starting Razorpay...';
   } else {
     buySelectedEl.classList.remove('is-disabled');
-    buySelectedEl.href = '#shop';
     buySelectedEl.textContent = 'Pay with Razorpay';
-    finalBuyLinkEl.href = '#shop';
     finalBuyLinkEl.textContent = 'Pay with Razorpay';
   }
 }
@@ -277,6 +273,12 @@ async function openRazorpayCheckout(items, selectedPlan) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const summaryList = document.getElementById('summary-list');
+
+  if (!summaryList) {
+    return;
+  }
+
   document.querySelectorAll('.plan-switch button').forEach((button) => {
     button.addEventListener('click', () => {
       plan = button.dataset.plan || 'weekly';
@@ -344,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedItems = getSelectedItems();
 
     if (!selectedItems.length || isPaymentInFlight) {
-      document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.product-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 

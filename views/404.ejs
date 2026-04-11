@@ -2,22 +2,25 @@
 <html lang="en">
 <head>
   <%- include('partials/head', {
-    pageTitle: `Not Found | ${site.name}`,
-    pageDescription: 'The page you requested could not be found.'
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
   }) %>
 </head>
 <body class="page">
-  <div class="page-frame"></div>
   <%- include('partials/nav') %>
 
   <main class="page-main">
-    <section class="section section--narrow utility-page">
+    <section class="page-hero shell utility-page">
       <p class="eyebrow">404</p>
-      <h1 class="page-title">That page does not exist.</h1>
-      <p class="lede">Try the issue archive or head back to the homepage.</p>
-      <div class="hero__actions">
-        <a class="button button--primary" href="/">Go home</a>
-        <a class="button button--secondary" href="/issues">Browse issues</a>
+      <h1>That page does not exist.</h1>
+      <p class="lede">Use the Home or Shop pages to get back into the site.</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="/">Go home</a>
+        <a class="button button-secondary" href="/shop">Go to shop</a>
       </div>
     </section>
   </main>

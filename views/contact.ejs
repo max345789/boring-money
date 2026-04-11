@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData,
+    pageScripts: ['/backend.js']
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="page-hero shell">
+      <p class="eyebrow">Contact</p>
+      <h1>Get in touch for home orders, cafes, offices, and wholesale supply.</h1>
+      <p class="lede">The shop handles direct purchase. Use this page for delivery questions, larger recurring needs, or a custom tray mix.</p>
+    </section>
+
+    <section class="section shell">
+      <div class="contact-grid">
+        <div class="stack-list">
+          <% site.contactOptions.forEach((item) => { %>
+            <article class="content-row reveal-on-scroll">
+              <h3><%= item.title %></h3>
+              <p><%= item.body %></p>
+            </article>
+          <% }) %>
+        </div>
+
+        <div class="contact-card">
+          <form class="contact-form js-inquiry-form" action="/inquiries" method="post" novalidate>
+            <input type="hidden" name="source" value="contact-page">
+
+            <div class="newsletter-form__honeypot" aria-hidden="true">
+              <label>
+                Website
+                <input type="text" name="website" tabindex="-1" autocomplete="off">
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Name</span>
+              <input type="text" name="name" placeholder="Your name" required>
+            </label>
+
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" placeholder="you@example.com" required>
+            </label>
+
+            <label class="field">
+              <span>Company or location</span>
+              <input type="text" name="company" placeholder="Cafe, office, or neighborhood">
+            </label>
+
+            <label class="field">
+              <span>Message</span>
+              <textarea name="message" rows="6" placeholder="Tell us what you want to order, how often, and where you need delivery." required></textarea>
+            </label>
+
+            <button class="button button-primary button-block" type="submit">Send inquiry</button>
+            <p class="form-status" role="status" hidden></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--tint">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">Best next step</p>
+          <h2>Use the right route for what you need.</h2>
+        </div>
+
+        <div class="content-grid content-grid--three">
+          <article class="content-block reveal-on-scroll">
+            <h3>Buying for yourself</h3>
+            <p>Go to the Shop page and pay directly with Razorpay.</p>
+          </article>
+          <article class="content-block reveal-on-scroll">
+            <h3>Buying for a team</h3>
+            <p>Use the contact form for office pantry, hospitality, and repeat weekly supply.</p>
+          </article>
+          <article class="content-block reveal-on-scroll">
+            <h3>Need guidance first</h3>
+            <p>Review the FAQ and pairing pages if you want help choosing trays or usage ideas.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

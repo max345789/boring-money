@@ -2,8 +2,8 @@
   let runtimeConfigPromise = null;
 
   const statusMessages = {
-    success: { tone: 'success', message: 'Subscription confirmed. Your first issue is on the way.' },
-    exists: { tone: 'info', message: 'You are already subscribed. We updated your details.' },
+    success: { tone: 'success', message: 'Subscription confirmed. We will keep you posted on weekly harvest availability.' },
+    exists: { tone: 'info', message: 'You are already on the list. We updated your details.' },
     invalid: { tone: 'error', message: 'Please enter a valid email address and try again.' },
     'rate-limited': { tone: 'error', message: 'Too many attempts right now. Please wait a minute and try again.' },
     'inquiry-success': { tone: 'success', message: 'Inquiry received. We will get back to you shortly.' },
@@ -54,32 +54,19 @@
   }
 
   function getFeedbackNode(form) {
-    let node = form.nextElementSibling;
-
-    if (!node || !node.classList.contains('backend-feedback')) {
-      node = document.createElement('p');
-      node.className = 'backend-feedback';
-      node.style.margin = '12px 0 0';
-      node.style.fontFamily = "'DM Mono', monospace";
-      node.style.fontSize = '11px';
-      node.style.letterSpacing = '0.04em';
-      node.style.textTransform = 'uppercase';
-      form.insertAdjacentElement('afterend', node);
-    }
-
-    return node;
+    return form.querySelector('.form-status');
   }
 
   function showFeedback(form, tone, message) {
     const node = getFeedbackNode(form);
-    const colors = {
-      success: '#2f7b52',
-      error: '#9f403d',
-      info: '#6c5a2d'
-    };
 
+    if (!node) {
+      return;
+    }
+
+    node.hidden = false;
     node.textContent = message;
-    node.style.color = colors[tone] || '#8a8a7c';
+    node.className = `form-status form-status--${tone}`;
   }
 
   async function submitJson(form, endpoint) {

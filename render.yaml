@@ -11,6 +11,12 @@ services:
         value: production
       - key: TRUST_PROXY
         value: "1"
+      - key: SITE_URL
+        value: https://sprigandsoil.in
+      - key: WHATSAPP_PHONE
+        sync: false
+      - key: INSTAGRAM_URL
+        value: https://www.instagram.com/sprigandsoil
       - key: DATABASE_URL
         sync: false
       - key: ADMIN_USERNAME

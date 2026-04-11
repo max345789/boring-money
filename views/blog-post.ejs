@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: pageTitle,
+    pageDescription: pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <article class="article-page shell">
+      <header class="page-hero article-hero">
+        <p class="eyebrow">Blog article</p>
+        <h1><%= post.title %></h1>
+        <p class="lede"><%= post.intro %></p>
+      </header>
+
+      <section class="article-layout">
+        <div class="article-content">
+          <% post.sections.forEach((section) => { %>
+            <section class="article-section">
+              <h2><%= section.heading %></h2>
+              <% section.paragraphs.forEach((paragraph) => { %>
+                <p><%= paragraph %></p>
+              <% }) %>
+            </section>
+          <% }) %>
+        </div>
+
+        <aside class="article-rail">
+          <div class="content-block">
+            <h2>Target keywords</h2>
+            <p><%= post.keywords.join(', ') %></p>
+          </div>
+          <div class="content-block">
+            <h2>Ready to order?</h2>
+            <p>Message us on WhatsApp for weekly boxes or one-time delivery in the Pattambi belt.</p>
+            <a class="text-link" href="<%= site.whatsappHref %>">Order on WhatsApp</a>
+          </div>
+        </aside>
+      </section>
+    </article>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

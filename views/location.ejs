@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle: pageTitle,
+    pageDescription: pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <article class="article-page shell">
+      <header class="page-hero article-hero">
+        <p class="eyebrow">Local delivery page</p>
+        <h1><%= page.h1 %></h1>
+        <p class="lede"><%= page.intro %></p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="<%= site.whatsappHref %>">Order on WhatsApp</a>
+          <a class="button button-secondary" href="/subscribe">Start weekly box</a>
+        </div>
+      </header>
+
+      <section class="article-layout">
+        <div class="article-content">
+          <% page.paragraphs.forEach((paragraph) => { %>
+            <p><%= paragraph %></p>
+          <% }) %>
+        </div>
+
+        <aside class="article-rail">
+          <div class="content-block">
+            <h2>Why this page matters locally</h2>
+            <p>We use a tight delivery radius so customers in <%= page.localNotes.join(', ') %> get fresher greens with less travel time.</p>
+          </div>
+          <div class="content-block">
+            <h2>Preferred order route</h2>
+            <p>WhatsApp is the fastest way to confirm your area, delivery day, and preferred tray mix.</p>
+            <a class="text-link" href="<%= site.whatsappHref %>">Message Sprig &amp; Soil</a>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section section--tight">
+        <div class="location-link-block">
+          <p>We also deliver to:
+            <% site.areas.forEach((area, index) => { %>
+              <a href="<%= area.href %>"><%= area.label %></a><%= index < site.areas.length - 1 ? ' · ' : '' %>
+            <% }) %>
+          </p>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

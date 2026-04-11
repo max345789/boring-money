@@ -1,7 +1,21 @@
-<header class="site-header" data-nav>
-  <div class="site-header__inner">
+<%
+  const navGroups = {
+    '/': ['/', '/index.html'],
+    '/shop': ['/shop', '/issues', '/issues.html', '/marketplace', '/marketplace.html'],
+    '/subscribe': ['/subscribe', '/subscribe.html'],
+    '/blog': ['/blog'],
+    '/faq': ['/faq', '/boring-score', '/boring-score.html'],
+    '/contact': ['/contact', '/advertise', '/advertise.html']
+  };
+%>
+<header class="site-header" data-nav data-open="false">
+  <div class="site-header__inner shell">
     <a class="brandmark" href="/" aria-label="<%= site.name %> home">
-      <span class="brandmark__name">Boring</span><span class="brandmark__accent">Money</span>
+      <span class="brandmark__leaf" aria-hidden="true"></span>
+      <span class="brandmark__text">
+        <span class="brandmark__name">Sprig</span>
+        <span class="brandmark__accent">&amp; Soil</span>
+      </span>
     </a>
 
     <button
@@ -15,13 +29,13 @@
     </button>
 
     <nav class="site-nav" id="site-nav" data-nav-panel>
-      <a href="/" class="<%= currentPath === '/' ? 'is-active' : '' %>">Home</a>
-      <a href="/about" class="<%= currentPath === '/about' ? 'is-active' : '' %>">About</a>
-      <a href="/issues" class="<%= currentPath.startsWith('/issues') ? 'is-active' : '' %>">Issues</a>
-      <a href="/playbooks" class="<%= currentPath === '/playbooks' ? 'is-active' : '' %>">Playbooks</a>
-      <a href="/community" class="<%= currentPath === '/community' ? 'is-active' : '' %>">Community</a>
+      <% site.primaryNav.forEach((item) => { %>
+        <a href="<%= item.href %>" class="<%= (navGroups[item.href] || [item.href]).includes(currentPath) ? 'is-active' : '' %>">
+          <%= item.label %>
+        </a>
+      <% }) %>
     </nav>
 
-    <a class="button button--quiet header-cta" href="/subscribe">Subscribe Free</a>
+    <a class="button button-primary header-cta" href="/subscribe">Start weekly box</a>
   </div>
 </header>

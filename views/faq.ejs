@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    structuredData
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="page-hero shell">
+      <p class="eyebrow">FAQ</p>
+      <h1>Answers that remove the usual friction around buying fresh greens online.</h1>
+      <p class="lede">Customers usually want clarity on freshness, storage, trial orders, and repeat supply. This page handles that directly.</p>
+    </section>
+
+    <section class="section shell">
+      <div class="faq-list">
+        <% site.faq.forEach((item) => { %>
+          <details class="faq-item reveal-on-scroll">
+            <summary><%= item.question %></summary>
+            <p><%= item.answer %></p>
+          </details>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="section section--tint">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">Delivery formats</p>
+          <h2>Ordering options for different buyer types.</h2>
+        </div>
+
+        <div class="content-grid content-grid--two">
+          <% site.deliveryZones.forEach((zone) => { %>
+            <article class="content-block reveal-on-scroll">
+              <h3><%= zone %></h3>
+              <p>We keep the options visible so customers understand whether the site supports their use case before they reach checkout.</p>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>
