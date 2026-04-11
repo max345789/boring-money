@@ -1,6 +1,6 @@
 const { productCatalog } = require('../microgreens');
 
-const siteUrl = process.env.SITE_URL || 'https://sprigandsoil.in';
+const siteUrl = process.env.SITE_URL || 'https://dabcloud.in';
 const whatsappPhone = process.env.WHATSAPP_PHONE || '91XXXXXXXXXX';
 const instagramUrl = process.env.INSTAGRAM_URL || 'https://www.instagram.com/sprigandsoil';
 const whatsappMessage = encodeURIComponent(

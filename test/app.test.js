@@ -212,9 +212,9 @@ test('blog index and crawl files render successfully', async (t) => {
   assert.equal(blogResponse.status, 200);
   assert.match(await blogResponse.text(), /Sprig &amp; Soil blog/);
   assert.equal(robotsResponse.status, 200);
-  assert.match(await robotsResponse.text(), /Sitemap: https:\/\/sprigandsoil.in\/sitemap.xml/);
+  assert.match(await robotsResponse.text(), /Sitemap: https:\/\/dabcloud.in\/sitemap.xml/);
   assert.equal(sitemapResponse.status, 200);
-  assert.match(await sitemapResponse.text(), /https:\/\/sprigandsoil.in\/microgreens-pattambi/);
+  assert.match(await sitemapResponse.text(), /https:\/\/dabcloud.in\/microgreens-pattambi/);
 });
 
 test('local Matter.js asset is served from the app', async (t) => {

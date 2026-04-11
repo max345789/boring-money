@@ -12,7 +12,7 @@ services:
       - key: TRUST_PROXY
         value: "1"
       - key: SITE_URL
-        value: https://sprigandsoil.in
+        value: https://dabcloud.in
       - key: WHATSAPP_PHONE
         sync: false
       - key: INSTAGRAM_URL
