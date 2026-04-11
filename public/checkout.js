@@ -13,6 +13,7 @@ const products = [
 ];
 
 let runtimeConfigPromise;
+let razorpayLoaderPromise;
 let isPaymentInFlight = false;
 
 function formatCurrency(valueInPaise) {
@@ -52,6 +53,73 @@ function setPaymentStatus(tone, message) {
   status.hidden = false;
   status.textContent = message;
   status.className = `payment-status payment-status--${tone}`;
+}
+
+function loadRazorpayCheckout() {
+  if (typeof window.Razorpay === 'function') {
+    return Promise.resolve();
+  }
+
+  if (razorpayLoaderPromise) {
+    return razorpayLoaderPromise;
+  }
+
+  razorpayLoaderPromise = new Promise((resolve, reject) => {
+    const scriptSelector = 'script[src="https://checkout.razorpay.com/v1/checkout.js"]';
+    const existingScript = document.querySelector(scriptSelector);
+    const script = existingScript || document.createElement('script');
+    let timeoutId = null;
+
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      script.removeEventListener('load', handleLoad);
+      script.removeEventListener('error', handleError);
+    };
+
+    const handleLoad = () => {
+      cleanup();
+      if (typeof window.Razorpay === 'function') {
+        resolve();
+        return;
+      }
+
+      reject(new Error('Razorpay Checkout loaded incorrectly. Please refresh and try again.'));
+    };
+
+    const handleError = () => {
+      cleanup();
+      reject(
+        new Error(
+          'Razorpay Checkout could not be loaded. Check your network connection and try again.'
+        )
+      );
+    };
+
+    timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(
+        new Error('Razorpay Checkout took too long to load. Please refresh the page and try again.')
+      );
+    }, 10000);
+
+    script.addEventListener('load', handleLoad, { once: true });
+    script.addEventListener('error', handleError, { once: true });
+
+    if (!existingScript) {
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.head.appendChild(script);
+    } else if (script.readyState === 'complete') {
+      handleLoad();
+    }
+  }).catch((error) => {
+    razorpayLoaderPromise = null;
+    throw error;
+  });
+
+  return razorpayLoaderPromise;
 }
 
 function loadSelection() {
@@ -246,9 +314,7 @@ async function openRazorpayCheckout(order, customer) {
       throw new Error('Razorpay keys are not configured on this server yet.');
     }
 
-    if (typeof window.Razorpay !== 'function') {
-      throw new Error('Razorpay Checkout could not be loaded.');
-    }
+    await loadRazorpayCheckout();
 
     const orderData = await createRazorpayOrder(order, customer);
     const razorpay = new window.Razorpay({

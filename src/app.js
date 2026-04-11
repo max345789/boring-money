@@ -302,6 +302,9 @@ function createApp(options = {}) {
 
   app.use(
     helmet({
+      crossOriginOpenerPolicy: {
+        policy: 'same-origin-allow-popups'
+      },
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
@@ -655,7 +658,8 @@ function createApp(options = {}) {
     canonicalPath: '/checkout',
     robotsContent: 'noindex,nofollow,noarchive',
     pageScripts: ['/checkout.js'],
-    loadRazorpay: true
+    loadRazorpay: true,
+    protectUi: false
   })));
   app.get(['/issues', '/issues.html', '/marketplace', '/marketplace.html'], redirectTo('/shop'));
   app.get('/about', renderPage('about', () => ({

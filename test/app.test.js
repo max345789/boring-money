@@ -81,6 +81,8 @@ test('checkout route renders directly', async (t) => {
   assert.equal(response.status, 200);
   assert.match(html, /Add your delivery details before payment/);
   assert.match(html, /Pay with Razorpay/);
+  assert.doesNotMatch(html, /<script src="\/protect\.js" defer><\/script>/);
+  assert.equal(response.headers.get('cross-origin-opener-policy'), 'same-origin-allow-popups');
 });
 
 test('subscriber API accepts valid submissions and deduplicates emails', async (t) => {
