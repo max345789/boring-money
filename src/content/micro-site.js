@@ -81,13 +81,13 @@ const site = {
   promiseStrip: [
     'Harvested within 48 hours of delivery',
     'Weekly subscription and one-time boxes',
-    'WhatsApp ordering welcome in Malayalam'
+    'Direct checkout with local delivery scheduling'
   ],
   hero: {
     eyebrow: 'Kerala microgreens delivery',
     headline: 'Farm-Fresh Microgreens, Delivered Weekly to Your Door',
     body:
-      'Sprig & Soil brings farm fresh microgreens and weekly microgreen delivery to homes in Pattambi, Valanchery, Pallipuram, and Pulamanthole, with simple WhatsApp ordering and doorstep delivery.',
+      'Sprig & Soil brings farm fresh microgreens and weekly microgreen delivery to homes in Pattambi, Valanchery, Pallipuram, and Pulamanthole, with simple direct checkout and doorstep delivery.',
     primaryCta: { href: '/subscribe', label: 'Subscribe today' },
     secondaryCta: { href: '/shop', label: 'Shop single boxes' }
   },
@@ -103,7 +103,7 @@ const site = {
     whyIntro:
       'Sprig & Soil is built around organic microgreens Kerala buyers can trust: clean growing, careful harvest timing, and a delivery window short enough to keep texture and nutrition intact.',
     howItWorksIntro:
-      'Our weekly microgreen delivery model keeps things simple. Choose your trays, pick a rhythm, confirm on WhatsApp or checkout online, and get fresh microgreens Kerala households can use across the week.',
+      'Our weekly microgreen delivery model keeps things simple. Choose your trays, pick a rhythm, enter your delivery details, and get fresh microgreens Kerala households can use across the week.',
     boxIntro:
       'Each box is built around practical staples for breakfast, lunch, and dinner. You get farm fresh microgreens instead of tired supermarket greens that already spent days in transport.',
     subscribeIntro:
@@ -148,7 +148,7 @@ const site = {
     },
     {
       title: 'Low-friction ordering',
-      body: 'Order online, confirm on WhatsApp, and keep the habit simple enough for a solo builder brand to serve consistently.'
+      body: 'Choose your trays, enter your delivery details, and keep the habit simple enough for a solo builder brand to serve consistently.'
     }
   ],
   steps: [
@@ -161,8 +161,8 @@ const site = {
       body: 'We schedule around the Pattambi, Valanchery, Pallipuram, and Pulamanthole belt so the delivery route stays tight.'
     },
     {
-      title: 'Pay online or order on WhatsApp',
-      body: 'Use the shop for secure checkout or message in Malayalam or English on WhatsApp if that is easier.'
+      title: 'Add details and pay online',
+      body: 'Use the shop to choose your trays, confirm delivery details, and pay securely online.'
     },
     {
       title: 'Receive, store, and use through the week',
@@ -262,7 +262,7 @@ const site = {
   wholesaleNotes: [
     'Predictable weekly harvest scheduling',
     'Suitable for home subscribers and local hospitality buyers',
-    'WhatsApp-first ordering for quick repeat purchase'
+    'Simple direct checkout for repeat household orders'
   ],
   contactOptions: [
     {
@@ -275,7 +275,7 @@ const site = {
     },
     {
       title: 'Questions before you order',
-      body: 'Reach out for delivery timing, area confirmation, tray recommendations, or Malayalam WhatsApp support.'
+      body: 'Reach out for delivery timing, area confirmation, tray recommendations, or larger recurring orders.'
     }
   ],
   areas: areaLinks,
@@ -313,7 +313,7 @@ site.localBusinessSchema = {
     opens: '09:00',
     closes: '18:00'
   },
-  sameAs: [site.instagramUrl, site.whatsappHref]
+  sameAs: [site.instagramUrl]
 };
 
 site.productSchema = {
@@ -350,7 +350,7 @@ const locationPages = [
     paragraphs: [
       'Our Pattambi customers include families near Bharathapuzha, homes around Pattambi town centre, and people in the local college area who want better greens without making a separate market run every few days. Because the delivery radius stays tight, we can harvest close to delivery day and keep the taste, texture, and shelf life strong. That matters when you are trying to build a simple health habit instead of buying something that looks good for one day and then fades in the fridge.',
       'The weekly box is designed for real meals. Add broccoli or pea shoots to breakfast, use sunflower greens in wraps or rice bowls, and finish curries or lunch plates with radish for bite. This is microgreens home delivery for Pattambi households that want practical nutrition, not novelty. If you are just testing the habit, start with a one-time box. If you already know you want a steady supply, move into the weekly plan and keep the kitchen stocked.',
-      'Sprig & Soil is a hyperlocal Kerala microgreen subscription, so service stays personal. You can ask questions in Malayalam on WhatsApp, confirm your delivery area quickly, and reorder without friction. For customers in and around Pattambi, that local loop is the advantage: fresher greens, simpler communication, and weekly delivery that actually fits the way you live.'
+      'Sprig & Soil is a hyperlocal Kerala microgreen subscription, so service stays personal. You can confirm your delivery area quickly, choose a plan that fits your kitchen, and place repeat orders without friction. For customers in and around Pattambi, that local loop is the advantage: fresher greens, simpler ordering, and weekly delivery that actually fits the way you live.'
     ],
     localNotes: ['Bharathapuzha', 'Pattambi town centre', 'college area'],
     articleSchema: {
@@ -374,7 +374,7 @@ const locationPages = [
     paragraphs: [
       'Valanchery sits in a part of Malappuram where health awareness is growing, but fresh produce still often comes through a longer distribution chain before it reaches the customer. Our model is different. We harvest locally, keep the delivery area focused, and bring the trays out within a tight window so the product still feels alive when you open it. That difference shows up in taste, crunch, and how long the greens stay usable in the fridge.',
       'For customers in Valanchery, the weekly box works well because it turns nutrition into a repeatable habit. Broccoli and pea shoots fit breakfast and juice routines. Sunflower greens add bulk and freshness to lunch plates. Radish gives curries, wraps, and grain bowls a sharper finish. This is fresh microgreens Kerala delivery designed for practical daily use, not a one-time wellness experiment.',
-      'Because Sprig & Soil is still a small local brand, ordering stays direct. Message us on WhatsApp, ask about your delivery schedule, and confirm the best plan for your household. If you want a lighter start, order once. If you want a steadier rhythm, move to the subscription. For Valanchery, the value is simple: fresher greens, local handling, and a service built close enough to care.'
+      'Because Sprig & Soil is still a small local brand, ordering stays direct. Choose your trays on the site, enter your delivery details, and confirm the best plan for your household without extra back-and-forth. If you want a lighter start, order once. If you want a steadier rhythm, move to the subscription. For Valanchery, the value is simple: fresher greens, local handling, and a service built close enough to care.'
     ],
     localNotes: ['Valanchery', 'Malappuram district', 'health-focused households'],
     articleSchema: {
@@ -398,7 +398,7 @@ const locationPages = [
     paragraphs: [
       'Pallipuram sits within a belt where farming roots still matter, especially around the Parathur Panchayath side. That local agricultural memory is part of why microgreens make sense here. People understand the value of produce that is grown close by and handled carefully. Our model leans into that. We do not promise industrial scale. We promise a smaller, more controlled product that reaches you with better texture and flavor because it has not spent extra days in transit.',
       'A weekly box works well in Pallipuram because it gives you several ways to use the trays without waste. Broccoli and pea shoots slot into breakfast. Sunflower greens work for lunch bowls, sandwiches, and salads. Radish gives evening meals a fresh peppery finish. This is organic microgreens Kerala delivery for households that want variety, but still need something practical enough to finish through the week.',
-      'If you are in Pallipuram and want a local food habit that feels manageable, start with a single order and see which trays your home reaches for first. Then move into the weekly subscription. WhatsApp ordering is simple, Malayalam messages are welcome, and the local delivery loop keeps the product aligned with the farming values people in this area already respect.'
+      'If you are in Pallipuram and want a local food habit that feels manageable, start with a single order and see which trays your home reaches for first. Then move into the weekly subscription. The checkout flow is simple, the delivery route stays local, and the product remains aligned with the farming values people in this area already respect.'
     ],
     localNotes: ['Pallipuram', 'Parathur Panchayath', 'local farming roots'],
     articleSchema: {
@@ -422,7 +422,7 @@ const locationPages = [
     paragraphs: [
       'Pulamanthole is closely associated with the Kunthippuzha river and a long local respect for health traditions, including Ayurvedic thinking around food quality and natural nourishment. Microgreens fit naturally into that context. They are small, dense, flavorful greens that can support a more intentional food routine without requiring a complete lifestyle reset. Because our service area stays local, we can keep the freshness promise much stronger than a general retail chain.',
       'In practical terms, that means greens you can actually use all week. Add broccoli shoots to juices or breakfast plates, use sunflower greens in lunch wraps, and finish rice or curry meals with radish or pea shoots. This is microgreens home delivery built for Pulamanthole families who want better food inputs, not more hassle. If you care about local agriculture and food that feels less industrial, the weekly box makes a lot of sense.',
-      'Ordering is kept simple on purpose. Send a WhatsApp message, confirm your area, and choose a one-time box or ongoing plan. Malayalam is welcome. For Pulamanthole, the value is not just convenience. It is the combination of local agriculture, natural nutrition, and a delivery model shaped around the rhythm of the area instead of a generic state-wide supply chain.'
+      'Ordering is kept simple on purpose. Choose your trays, confirm your area with your delivery details, and pick a one-time box or ongoing plan. For Pulamanthole, the value is not just convenience. It is the combination of local agriculture, natural nutrition, and a delivery model shaped around the rhythm of the area instead of a generic state-wide supply chain.'
     ],
     localNotes: ['Kunthippuzha', 'Ayurvedic tradition', 'agricultural heritage'],
     articleSchema: {
@@ -485,7 +485,7 @@ const blogPosts = [
       {
         heading: 'What the service looks like',
         paragraphs: [
-          'The service is built for homes in and around Pattambi that want something fresher than generic store greens. Orders are collected through the site and WhatsApp, trays are harvested close to dispatch, and the delivery route stays compact so the greens arrive ready to use.',
+          'The service is built for homes in and around Pattambi that want something fresher than generic store greens. Orders are collected through the site, trays are harvested close to dispatch, and the delivery route stays compact so the greens arrive ready to use.',
           'That short local loop matters. When fresh vegetables delivery Pattambi customers rely on comes from a longer chain, shelf life usually drops before the box even reaches home.'
         ]
       },
@@ -499,8 +499,8 @@ const blogPosts = [
       {
         heading: 'How to place an order',
         paragraphs: [
-          'The easiest way to order is to choose a box on the site and then confirm details by WhatsApp if needed. Malayalam messages are welcome, which keeps the process comfortable for local customers.',
-          'If you are in Pattambi and want fresher greens with less waste, the combination of local harvesting, quick delivery, and WhatsApp support is what makes this service stand out.'
+          'The easiest way to order is to choose a box on the site and complete checkout with your delivery details. That keeps the process clear and predictable for local customers.',
+          'If you are in Pattambi and want fresher greens with less waste, the combination of local harvesting, quick delivery, and direct checkout is what makes this service stand out.'
         ]
       }
     ]
@@ -598,7 +598,7 @@ const blogPosts = [
       {
         heading: 'Why Sprig & Soil uses a local belt model',
         paragraphs: [
-          'A local delivery radius helps the subscription stay credible. Greens are harvested nearer to dispatch, quality stays steadier, and communication stays direct through WhatsApp.',
+          'A local delivery radius helps the subscription stay credible. Greens are harvested nearer to dispatch, quality stays steadier, and the order flow stays direct on the site.',
           'For customers across Pattambi, Valanchery, Pallipuram, and Pulamanthole, the weekly subscription is the easiest way to build a repeatable health habit without overcomplicating the kitchen.'
         ]
       }

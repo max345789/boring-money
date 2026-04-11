@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><%= pageTitle %></title>
 <meta name="description" content="<%= pageDescription %>">
-<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="robots" content="<%= typeof robotsContent !== 'undefined' ? robotsContent : 'index,follow,max-image-preview:large' %>">
 <meta name="geo.region" content="IN-KL">
 <meta name="geo.placename" content="Pattambi, Kerala">
 <meta name="language" content="en-IN">

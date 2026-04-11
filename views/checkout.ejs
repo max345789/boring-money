@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head', {
+    pageTitle,
+    pageDescription,
+    canonicalUrl,
+    canonicalPath,
+    ogImage,
+    robotsContent,
+    structuredData,
+    pageScripts: ['/checkout.js'],
+    loadRazorpay: true
+  }) %>
+</head>
+<body class="page">
+  <%- include('partials/nav') %>
+
+  <main class="page-main">
+    <section class="page-hero shell">
+      <p class="eyebrow">Checkout</p>
+      <h1>Add your delivery details before payment.</h1>
+      <p class="lede">Review your tray selection, enter your address and contact details, and then pay securely with Razorpay.</p>
+    </section>
+
+    <section class="section section--tint">
+      <div class="shell checkout-layout">
+        <div class="contact-card" id="checkout-empty" hidden>
+          <h2>Your cart is empty.</h2>
+          <p class="small-note">Go back to the shop, choose your trays, and then return here to complete checkout.</p>
+          <div class="stacked-cta">
+            <a class="button button-primary" href="/shop">Go to shop</a>
+          </div>
+        </div>
+
+        <div class="checkout-layout__content" id="checkout-content" hidden>
+          <div class="contact-card">
+            <h2>Delivery details</h2>
+            <form class="contact-form" id="checkout-form" novalidate>
+              <label class="field">
+                <span>Full name</span>
+                <input type="text" name="name" placeholder="Your full name" required>
+              </label>
+
+              <label class="field">
+                <span>Phone number</span>
+                <input type="tel" name="phone" placeholder="9876543210" required>
+              </label>
+
+              <label class="field">
+                <span>Email</span>
+                <input type="email" name="email" placeholder="you@example.com">
+              </label>
+
+              <label class="field">
+                <span>Address</span>
+                <textarea name="address" rows="4" placeholder="House name, street, area" required></textarea>
+              </label>
+
+              <label class="field">
+                <span>Place</span>
+                <input type="text" name="place" placeholder="Pattambi, Valanchery, Pallipuram, or Pulamanthole" required>
+              </label>
+
+              <label class="field">
+                <span>Pincode</span>
+                <input type="text" name="pincode" inputmode="numeric" placeholder="679303" required>
+              </label>
+
+              <label class="field">
+                <span>Landmark</span>
+                <input type="text" name="landmark" placeholder="Optional landmark">
+              </label>
+
+              <button class="button button-primary button-block" type="submit" id="checkout-pay">
+                Pay with Razorpay
+              </button>
+              <p class="payment-status" id="checkout-status" hidden></p>
+            </form>
+          </div>
+
+          <aside class="order-summary">
+            <div>
+              <p class="eyebrow">Order summary</p>
+              <h3 id="checkout-plan">Order</h3>
+            </div>
+
+            <div class="summary-list" id="checkout-summary-list"></div>
+
+            <div class="summary-totals">
+              <div class="summary-row">
+                <span>Items</span>
+                <strong id="checkout-items">0</strong>
+              </div>
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <strong id="checkout-subtotal">₹0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span>Savings</span>
+                <strong id="checkout-savings">₹0.00</strong>
+              </div>
+              <div class="summary-row">
+                <span>Delivery</span>
+                <strong id="checkout-delivery">Included</strong>
+              </div>
+              <div class="summary-row summary-row-total">
+                <span>Total</span>
+                <strong id="checkout-total">₹0.00</strong>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

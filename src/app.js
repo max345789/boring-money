@@ -96,7 +96,47 @@ const razorpayOrderSchema = z.object({
         quantity: z.coerce.number().int().min(1).max(20)
       })
     )
-    .min(1, 'Add at least one tray before paying.')
+    .min(1, 'Add at least one tray before paying.'),
+  customer: z.object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Enter your full name.')
+      .max(100, 'Name must be 100 characters or fewer.'),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9 ]{10,15}$/, 'Enter a valid phone number.')
+      .transform((value) => value.replaceAll(' ', '')),
+    email: z
+      .string()
+      .trim()
+      .email('Enter a valid email address.')
+      .max(160, 'Email must be 160 characters or fewer.')
+      .optional()
+      .or(z.literal(''))
+      .transform((value) => value || ''),
+    address: z
+      .string()
+      .trim()
+      .min(8, 'Enter your delivery address.')
+      .max(240, 'Address must be 240 characters or fewer.'),
+    place: z
+      .string()
+      .trim()
+      .min(2, 'Enter your place or town.')
+      .max(120, 'Place must be 120 characters or fewer.'),
+    pincode: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, 'Enter a valid 6-digit pincode.'),
+    landmark: z
+      .string()
+      .trim()
+      .max(120, 'Landmark must be 120 characters or fewer.')
+      .optional()
+      .transform((value) => value || '')
+  })
 });
 
 const razorpayVerifySchema = z.object({
@@ -608,6 +648,15 @@ function createApp(options = {}) {
       'Choose a single box or weekly microgreen delivery for Pattambi, Valanchery, Pallipuram, and Pulamanthole.',
     canonicalPath: '/shop'
   })));
+  app.get('/checkout', renderPage('checkout', () => ({
+    pageTitle: 'Checkout | Sprig & Soil',
+    pageDescription:
+      'Enter delivery details for your Sprig & Soil microgreens order and complete payment securely with Razorpay.',
+    canonicalPath: '/checkout',
+    robotsContent: 'noindex,nofollow,noarchive',
+    pageScripts: ['/checkout.js'],
+    loadRazorpay: true
+  })));
   app.get(['/issues', '/issues.html', '/marketplace', '/marketplace.html'], redirectTo('/shop'));
   app.get('/about', renderPage('about', () => ({
     pageTitle: 'About Sprig & Soil',
@@ -636,14 +685,14 @@ function createApp(options = {}) {
   app.get('/faq', renderPage('faq', () => ({
     pageTitle: 'Questions and Answers',
     pageDescription:
-      'Find answers about freshness, delivery, shelf life, subscriptions, WhatsApp ordering, and service areas.',
+      'Find answers about freshness, delivery, shelf life, subscriptions, checkout, and service areas.',
     canonicalPath: '/faq'
   })));
   app.get(['/boring-score', '/boring-score.html'], redirectTo('/faq'));
   app.get('/subscribe', renderPage('subscribe', () => ({
     pageTitle: 'Weekly Microgreen Subscription Kerala | Sprig & Soil',
     pageDescription:
-      'Start a weekly microgreen subscription for Pattambi, Valanchery, Pallipuram, or Pulamanthole. Fresh harvests and WhatsApp support.',
+      'Start a weekly microgreen subscription for Pattambi, Valanchery, Pallipuram, or Pulamanthole. Fresh harvests and direct checkout support.',
     canonicalPath: '/subscribe',
     pageScripts: ['/backend.js']
   })));
@@ -897,6 +946,9 @@ function createApp(options = {}) {
         receipt: `sprig-${crypto.randomBytes(6).toString('hex')}`,
         notes: {
           plan: parsed.data.plan,
+          customer_name: parsed.data.customer.name,
+          phone: parsed.data.customer.phone,
+          place: parsed.data.customer.place,
           items: order.selectedItems
             .map((item) => `${item.name} x${item.quantity}`)
             .join(', ')
@@ -915,6 +967,17 @@ function createApp(options = {}) {
               ? 'Weekly microgreens harvest box'
               : 'Fresh microgreens harvest box',
           order_id: razorpayOrder.id,
+          prefill: {
+            name: parsed.data.customer.name,
+            contact: parsed.data.customer.phone,
+            email: parsed.data.customer.email
+          },
+          notes: {
+            address: parsed.data.customer.address,
+            place: parsed.data.customer.place,
+            pincode: parsed.data.customer.pincode,
+            landmark: parsed.data.customer.landmark
+          },
           theme: {
             color: '#3b5d33'
           }
@@ -926,7 +989,8 @@ function createApp(options = {}) {
           discountInPaise: order.discountInPaise,
           shippingInPaise: order.shippingInPaise,
           totalInPaise: order.totalInPaise
-        }
+        },
+        customer: parsed.data.customer
       });
     } catch (error) {
       res.status(502).json({

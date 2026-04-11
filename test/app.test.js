@@ -70,6 +70,19 @@ test('canonical how it works route renders directly', async (t) => {
   assert.match(html, /How it works/i);
 });
 
+test('checkout route renders directly', async (t) => {
+  const { app, server, baseUrl } = await createTestServer();
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/checkout`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /Add your delivery details before payment/);
+  assert.match(html, /Pay with Razorpay/);
+});
+
 test('subscriber API accepts valid submissions and deduplicates emails', async (t) => {
   const { app, server, baseUrl } = await createTestServer();
 
@@ -163,7 +176,7 @@ test('location landing page renders with local SEO copy', async (t) => {
   assert.equal(response.status, 200);
   assert.match(html, /Fresh Microgreens Delivered Weekly in Pattambi/);
   assert.match(html, /Bharathapuzha/);
-  assert.match(html, /Order on WhatsApp/);
+  assert.match(html, /Order from this area/);
 });
 
 test('blog index and crawl files render successfully', async (t) => {
@@ -670,7 +683,16 @@ test('razorpay order endpoint creates server-priced checkout orders', async (t) 
       items: [
         { id: 'sunflower', quantity: 2 },
         { id: 'pea', quantity: 1 }
-      ]
+      ],
+      customer: {
+        name: 'Sarath C',
+        phone: '9876543210',
+        email: 'sarath@example.com',
+        address: 'Near town centre, main road',
+        place: 'Pattambi',
+        pincode: '679303',
+        landmark: 'Bus stand side'
+      }
     })
   });
   const body = await response.json();
@@ -683,6 +705,8 @@ test('razorpay order endpoint creates server-priced checkout orders', async (t) 
   assert.equal(body.order.totalInPaise, 58230);
   assert.equal(createdOrders[0].amount, 58230);
   assert.equal(createdOrders[0].currency, 'INR');
+  assert.equal(body.customer.place, 'Pattambi');
+  assert.equal(body.checkout.prefill.contact, '9876543210');
 });
 
 test('razorpay verify endpoint rejects invalid signatures and accepts valid ones', async (t) => {
