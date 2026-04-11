@@ -586,6 +586,126 @@ test('runtime config endpoint exposes turnstile site key when enabled', async (t
   assert.equal(body.turnstileSiteKey, 'site-key-public');
 });
 
+test('runtime config endpoint exposes razorpay key id when enabled', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    razorpay: {
+      keyId: 'rzp_test_public',
+      keySecret: 'secret'
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/api/runtime-config`, {
+    headers: { Accept: 'application/json' }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.razorpayKeyId, 'rzp_test_public');
+});
+
+test('razorpay order endpoint creates server-priced checkout orders', async (t) => {
+  const createdOrders = [];
+  const { app, server, baseUrl } = await createTestServer({
+    razorpayGateway: {
+      enabled: true,
+      keyId: 'rzp_test_public',
+      async createOrder(payload) {
+        createdOrders.push(payload);
+        return {
+          id: 'order_test_123',
+          amount: payload.amount,
+          currency: payload.currency
+        };
+      },
+      verifyPaymentSignature() {
+        return false;
+      }
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const response = await fetch(`${baseUrl}/api/payments/razorpay/order`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      plan: 'weekly',
+      items: [
+        { id: 'sunflower', quantity: 2 },
+        { id: 'pea', quantity: 1 }
+      ]
+    })
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 201);
+  assert.equal(body.checkout.order_id, 'order_test_123');
+  assert.equal(body.checkout.key, 'rzp_test_public');
+  assert.equal(body.order.subtotalInPaise, 64700);
+  assert.equal(body.order.discountInPaise, 6470);
+  assert.equal(body.order.totalInPaise, 58230);
+  assert.equal(createdOrders[0].amount, 58230);
+  assert.equal(createdOrders[0].currency, 'INR');
+});
+
+test('razorpay verify endpoint rejects invalid signatures and accepts valid ones', async (t) => {
+  const { app, server, baseUrl } = await createTestServer({
+    razorpayGateway: {
+      enabled: true,
+      keyId: 'rzp_test_public',
+      async createOrder() {
+        throw new Error('Not used in this test.');
+      },
+      verifyPaymentSignature({ orderId, paymentId, signature }) {
+        return (
+          orderId === 'order_test_123' &&
+          paymentId === 'pay_test_123' &&
+          signature === 'sig_test_123'
+        );
+      }
+    }
+  });
+
+  t.after(() => closeTestServer({ app, server }));
+
+  const invalidResponse = await fetch(`${baseUrl}/api/payments/razorpay/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      razorpay_order_id: 'order_test_123',
+      razorpay_payment_id: 'pay_test_123',
+      razorpay_signature: 'bad_sig'
+    })
+  });
+
+  assert.equal(invalidResponse.status, 400);
+  assert.match((await invalidResponse.json()).error, /verification failed/i);
+
+  const validResponse = await fetch(`${baseUrl}/api/payments/razorpay/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      razorpay_order_id: 'order_test_123',
+      razorpay_payment_id: 'pay_test_123',
+      razorpay_signature: 'sig_test_123'
+    })
+  });
+
+  assert.equal(validResponse.status, 200);
+  assert.match((await validResponse.json()).message, /verified successfully/i);
+});
+
 test('app supports async database adapters for Supabase/Postgres', async (t) => {
   const database = {
     async ping() {},

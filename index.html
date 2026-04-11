@@ -15,6 +15,7 @@
     rel="stylesheet"
   >
   <link rel="stylesheet" href="/shared.css">
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
   <script src="/home.js" defer></script>
 </head>
 <body>
@@ -139,10 +140,10 @@
 
         <div class="shop-layout">
           <div class="product-list">
-            <article class="product product-gold" data-id="sunflower" data-name="Sunflower Crunch" data-price="8">
+            <article class="product product-gold" data-id="sunflower" data-name="Sunflower Crunch" data-price="19900">
               <div class="product-topline">
                 <p>Fresh tray</p>
-                <strong>$8.00</strong>
+                <strong>₹199.00</strong>
               </div>
 
               <div class="product-main">
@@ -168,10 +169,10 @@
               </div>
             </article>
 
-            <article class="product product-forest" data-id="broccoli" data-name="Broccoli Shield" data-price="9">
+            <article class="product product-forest" data-id="broccoli" data-name="Broccoli Shield" data-price="22900">
               <div class="product-topline">
                 <p>Fresh tray</p>
-                <strong>$9.00</strong>
+                <strong>₹229.00</strong>
               </div>
 
               <div class="product-main">
@@ -197,10 +198,10 @@
               </div>
             </article>
 
-            <article class="product product-rose" data-id="radish" data-name="Radish Ignite" data-price="8">
+            <article class="product product-rose" data-id="radish" data-name="Radish Ignite" data-price="19900">
               <div class="product-topline">
                 <p>Fresh tray</p>
-                <strong>$8.00</strong>
+                <strong>₹199.00</strong>
               </div>
 
               <div class="product-main">
@@ -226,10 +227,10 @@
               </div>
             </article>
 
-            <article class="product product-sage" data-id="pea" data-name="Pea Tendril Sweet" data-price="10">
+            <article class="product product-sage" data-id="pea" data-name="Pea Tendril Sweet" data-price="24900">
               <div class="product-topline">
                 <p>Fresh tray</p>
-                <strong>$10.00</strong>
+                <strong>₹249.00</strong>
               </div>
 
               <div class="product-main">
@@ -273,11 +274,11 @@
               </div>
               <div class="summary-row">
                 <span>Subtotal</span>
-                <strong id="summary-subtotal">$0.00</strong>
+                <strong id="summary-subtotal">₹0.00</strong>
               </div>
               <div class="summary-row">
                 <span id="summary-savings-label">Weekly savings</span>
-                <strong id="summary-savings">$0.00</strong>
+                <strong id="summary-savings">₹0.00</strong>
               </div>
               <div class="summary-row">
                 <span>Delivery</span>
@@ -285,12 +286,13 @@
               </div>
               <div class="summary-row summary-row-total">
                 <span>Total</span>
-                <strong id="summary-total">$0.00</strong>
+                <strong id="summary-total">₹0.00</strong>
               </div>
             </div>
 
             <a class="button button-primary button-block is-disabled" id="buy-selected" href="#shop">Choose Your Trays First</a>
             <a class="button button-secondary button-block" href="mailto:hello@sprigandsoil.com?subject=Wholesale%20Microgreens">Ask About Office or Cafe Supply</a>
+            <p class="payment-status" id="payment-status" hidden></p>
           </aside>
         </div>
       </section>

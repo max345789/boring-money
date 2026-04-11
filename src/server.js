@@ -12,6 +12,7 @@ const app = createApp({
   admin: config.admin,
   email: config.email,
   turnstile: config.turnstile,
+  razorpay: config.razorpay,
   monitoring
 });
 

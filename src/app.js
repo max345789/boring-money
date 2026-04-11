@@ -4,10 +4,13 @@ const compression = require('compression');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const crypto = require('node:crypto');
 const { z } = require('zod');
 
 const { createDatabase } = require('./db');
+const { buildMicrogreenOrder, productCatalog } = require('./microgreens');
 const { createNotifier } = require('./notifier');
+const { createRazorpayGateway } = require('./razorpay');
 const { verifyTurnstileToken } = require('./turnstile');
 const {
   site,
@@ -77,6 +80,26 @@ const inquirySchema = z.object({
     .optional()
     .or(z.literal(''))
     .transform(() => '')
+});
+
+const productIds = productCatalog.map((product) => product.id);
+
+const razorpayOrderSchema = z.object({
+  plan: z.enum(['weekly', 'once']),
+  items: z
+    .array(
+      z.object({
+        id: z.enum(productIds),
+        quantity: z.coerce.number().int().min(1).max(20)
+      })
+    )
+    .min(1, 'Add at least one tray before paying.')
+});
+
+const razorpayVerifySchema = z.object({
+  razorpay_order_id: z.string().trim().min(1, 'Missing Razorpay order ID.'),
+  razorpay_payment_id: z.string().trim().min(1, 'Missing Razorpay payment ID.'),
+  razorpay_signature: z.string().trim().min(1, 'Missing Razorpay signature.')
 });
 
 function getSubscriptionFeedback(status) {
@@ -217,6 +240,8 @@ function createApp(options = {}) {
       sqlitePath: options.sqlitePath
     });
   const notifier = options.notifier || createNotifier(options.email || null);
+  const razorpayGateway =
+    options.razorpayGateway || createRazorpayGateway(options.razorpay || null);
   const adminGuard = createAdminGuard(options.admin || null);
   const globalRateLimit = {
     windowMs: options.globalRateLimit?.windowMs || 15 * 60 * 1000,
@@ -237,12 +262,26 @@ function createApp(options = {}) {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", 'https://challenges.cloudflare.com'],
+          scriptSrc: [
+            "'self'",
+            'https://challenges.cloudflare.com',
+            'https://checkout.razorpay.com'
+          ],
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:'],
-          connectSrc: ["'self'", 'https://challenges.cloudflare.com'],
-          frameSrc: ["'self'", 'https://challenges.cloudflare.com'],
+          connectSrc: [
+            "'self'",
+            'https://challenges.cloudflare.com',
+            'https://api.razorpay.com',
+            'https://checkout.razorpay.com'
+          ],
+          frameSrc: [
+            "'self'",
+            'https://challenges.cloudflare.com',
+            'https://api.razorpay.com',
+            'https://checkout.razorpay.com'
+          ],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
           formAction: ["'self'"],
@@ -291,6 +330,13 @@ function createApp(options = {}) {
     standardHeaders: true,
     legacyHeaders: false,
     handler: createRateLimitHandler({ redirectTo: '/advertise?status=inquiry-rate-limited' })
+  });
+  const paymentLimiter = rateLimit({
+    windowMs: subscribeRateLimit.windowMs,
+    limit: subscribeRateLimit.limit * 2,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: createRateLimitHandler()
   });
 
   async function verifyBotCheck(payload, remoteIp) {
@@ -568,7 +614,8 @@ function createApp(options = {}) {
 
   app.get('/api/runtime-config', (req, res) => {
     res.json({
-      turnstileSiteKey: turnstileConfig?.siteKey || null
+      turnstileSiteKey: turnstileConfig?.siteKey || null,
+      razorpayKeyId: razorpayGateway.keyId || null
     });
   });
 
@@ -678,6 +725,102 @@ function createApp(options = {}) {
     res.status(result.statusCode).json({
       message: 'Inquiry received. We will get back to you shortly.',
       inquiry: result.inquiry || null
+    });
+  });
+
+  app.post('/api/payments/razorpay/order', paymentLimiter, async (req, res) => {
+    if (!razorpayGateway.enabled) {
+      res.status(503).json({ error: 'Razorpay is not configured yet.' });
+      return;
+    }
+
+    const parsed = razorpayOrderSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0].message });
+      return;
+    }
+
+    const order = buildMicrogreenOrder(parsed.data.items, parsed.data.plan);
+
+    if (order.selectedItems.length === 0 || order.totalInPaise <= 0) {
+      res.status(400).json({ error: 'Add at least one tray before paying.' });
+      return;
+    }
+
+    try {
+      const razorpayOrder = await razorpayGateway.createOrder({
+        amount: order.totalInPaise,
+        currency: order.currency,
+        receipt: `sprig-${crypto.randomBytes(6).toString('hex')}`,
+        notes: {
+          plan: parsed.data.plan,
+          items: order.selectedItems
+            .map((item) => `${item.name} x${item.quantity}`)
+            .join(', ')
+        }
+      });
+
+      res.status(201).json({
+        keyId: razorpayGateway.keyId,
+        checkout: {
+          key: razorpayGateway.keyId,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          name: 'Sprig & Soil',
+          description:
+            parsed.data.plan === 'weekly'
+              ? 'Weekly microgreens harvest box'
+              : 'Fresh microgreens harvest box',
+          order_id: razorpayOrder.id,
+          theme: {
+            color: '#3b5d33'
+          }
+        },
+        order: {
+          plan: parsed.data.plan,
+          items: order.selectedItems,
+          subtotalInPaise: order.subtotalInPaise,
+          discountInPaise: order.discountInPaise,
+          shippingInPaise: order.shippingInPaise,
+          totalInPaise: order.totalInPaise
+        }
+      });
+    } catch (error) {
+      res.status(502).json({
+        error: error.message || 'Could not create a Razorpay order.'
+      });
+    }
+  });
+
+  app.post('/api/payments/razorpay/verify', paymentLimiter, (req, res) => {
+    if (!razorpayGateway.enabled) {
+      res.status(503).json({ error: 'Razorpay is not configured yet.' });
+      return;
+    }
+
+    const parsed = razorpayVerifySchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0].message });
+      return;
+    }
+
+    const isValid = razorpayGateway.verifyPaymentSignature({
+      orderId: parsed.data.razorpay_order_id,
+      paymentId: parsed.data.razorpay_payment_id,
+      signature: parsed.data.razorpay_signature
+    });
+
+    if (!isValid) {
+      res.status(400).json({ error: 'Payment verification failed.' });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'Payment verified successfully.',
+      paymentId: parsed.data.razorpay_payment_id,
+      orderId: parsed.data.razorpay_order_id
     });
   });
 

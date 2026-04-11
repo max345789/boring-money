@@ -1,52 +1,59 @@
-const currency = new Intl.NumberFormat('en-US', {
+const currency = new Intl.NumberFormat('en-IN', {
   style: 'currency',
-  currency: 'USD'
+  currency: 'INR'
 });
 
 const products = [
-  { id: 'sunflower', name: 'Sunflower Crunch', price: 8 },
-  { id: 'broccoli', name: 'Broccoli Shield', price: 9 },
-  { id: 'radish', name: 'Radish Ignite', price: 8 },
-  { id: 'pea', name: 'Pea Tendril Sweet', price: 10 }
+  { id: 'sunflower', name: 'Sunflower Crunch', priceInPaise: 19900 },
+  { id: 'broccoli', name: 'Broccoli Shield', priceInPaise: 22900 },
+  { id: 'radish', name: 'Radish Ignite', priceInPaise: 19900 },
+  { id: 'pea', name: 'Pea Tendril Sweet', priceInPaise: 24900 }
 ];
 
 const quantities = Object.fromEntries(products.map((product) => [product.id, 0]));
 let plan = 'weekly';
+let runtimeConfigPromise;
+let isPaymentInFlight = false;
 
-function formatCurrency(value) {
-  return currency.format(value);
+function formatCurrency(valueInPaise) {
+  return currency.format(valueInPaise / 100);
 }
 
-function buildOrderHref(items, selectedPlan, subject) {
-  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  const discount = selectedPlan === 'weekly' ? subtotal * 0.1 : 0;
-  const shipping = subtotal === 0 || subtotal >= 32 || selectedPlan === 'weekly' ? 0 : 6;
-  const total = subtotal - discount + shipping;
+function getRuntimeConfig() {
+  if (!runtimeConfigPromise) {
+    runtimeConfigPromise = fetch('/api/runtime-config', {
+      headers: {
+        Accept: 'application/json'
+      }
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error('Could not load payment settings.');
+      }
 
-  const body = [
-    'Hello Sprig & Soil,',
-    '',
-    `I want to buy a ${selectedPlan === 'weekly' ? 'weekly microgreens delivery' : 'one-time microgreens order'}.`,
-    '',
-    ...items.map(
-      (item) =>
-        `- ${item.name}: ${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}`
-    ),
-    '',
-    `Subtotal: ${formatCurrency(subtotal)}`,
-    discount > 0 ? `Weekly savings: -${formatCurrency(discount)}` : null,
-    `Delivery: ${shipping === 0 ? 'Included' : formatCurrency(shipping)}`,
-    `Total: ${formatCurrency(total)}`,
-    '',
-    'Name:',
-    'Phone:',
-    'Preferred delivery day:',
-    'Address:'
-  ]
-    .filter(Boolean)
-    .join('\n');
+      return response.json();
+    });
+  }
 
-  return `mailto:orders@sprigandsoil.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return runtimeConfigPromise;
+}
+
+function setPaymentStatus(tone, message) {
+  const status = document.getElementById('payment-status');
+
+  if (!status) {
+    return;
+  }
+
+  if (!message) {
+    status.hidden = true;
+    status.textContent = '';
+    status.className = 'payment-status';
+    return;
+  }
+
+  status.hidden = false;
+  status.textContent = message;
+  status.className = `payment-status payment-status--${tone}`;
 }
 
 function getSelectedItems() {
@@ -55,7 +62,7 @@ function getSelectedItems() {
     .map((product) => ({
       ...product,
       quantity: quantities[product.id],
-      total: quantities[product.id] * product.price
+      totalInPaise: quantities[product.id] * product.priceInPaise
     }));
 }
 
@@ -82,54 +89,85 @@ function updateSummary() {
     selectedItems.forEach((item) => {
       const row = document.createElement('div');
       row.className = 'summary-row summary-row--item';
-      row.innerHTML = `<span>${item.name} x ${item.quantity}</span><strong>${formatCurrency(item.total)}</strong>`;
+      row.innerHTML = `<span>${item.name} x ${item.quantity}</span><strong>${formatCurrency(item.totalInPaise)}</strong>`;
       summaryList.prepend(row);
     });
   }
 
   const itemCount = selectedItems.reduce((count, item) => count + item.quantity, 0);
-  const subtotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
-  const discount = plan === 'weekly' ? subtotal * 0.1 : 0;
-  const shipping = subtotal === 0 || subtotal >= 32 || plan === 'weekly' ? 0 : 6;
-  const total = subtotal - discount + shipping;
+  const subtotalInPaise = selectedItems.reduce((sum, item) => sum + item.totalInPaise, 0);
+  const discountInPaise = plan === 'weekly' ? Math.floor(subtotalInPaise * 0.1) : 0;
+  const shippingInPaise =
+    subtotalInPaise === 0 || subtotalInPaise >= 79900 || plan === 'weekly' ? 0 : 6000;
+  const totalInPaise = subtotalInPaise - discountInPaise + shippingInPaise;
 
   itemsEl.textContent = String(itemCount);
-  subtotalEl.textContent = formatCurrency(subtotal);
+  subtotalEl.textContent = formatCurrency(subtotalInPaise);
   savingsLabelEl.textContent = plan === 'weekly' ? 'Weekly savings' : 'Savings';
-  savingsEl.textContent = discount > 0 ? `-${formatCurrency(discount)}` : formatCurrency(0);
-  deliveryEl.textContent = shipping === 0 ? 'Included' : formatCurrency(shipping);
-  totalEl.textContent = formatCurrency(total);
+  savingsEl.textContent =
+    discountInPaise > 0 ? `-${formatCurrency(discountInPaise)}` : formatCurrency(0);
+  deliveryEl.textContent = shippingInPaise === 0 ? 'Included' : formatCurrency(shippingInPaise);
+  totalEl.textContent = formatCurrency(totalInPaise);
 
-  if (selectedItems.length === 0) {
+  if (selectedItems.length === 0 || isPaymentInFlight) {
     buySelectedEl.classList.add('is-disabled');
     buySelectedEl.href = '#shop';
-    buySelectedEl.textContent = 'Choose Your Trays First';
+    buySelectedEl.textContent =
+      selectedItems.length === 0 ? 'Choose Your Trays First' : 'Starting Razorpay...';
     finalBuyLinkEl.href = '#shop';
-    finalBuyLinkEl.textContent = 'Buy Microgreens Now';
+    finalBuyLinkEl.textContent =
+      selectedItems.length === 0 ? 'Buy Microgreens Now' : 'Starting Razorpay...';
   } else {
-    const orderHref = buildOrderHref(selectedItems, plan, 'Buy Microgreens');
     buySelectedEl.classList.remove('is-disabled');
-    buySelectedEl.href = orderHref;
-    buySelectedEl.textContent = 'Buy Selected Microgreens';
-    finalBuyLinkEl.href = orderHref;
-    finalBuyLinkEl.textContent = 'Complete Your Order';
+    buySelectedEl.href = '#shop';
+    buySelectedEl.textContent = 'Pay with Razorpay';
+    finalBuyLinkEl.href = '#shop';
+    finalBuyLinkEl.textContent = 'Pay with Razorpay';
   }
 }
 
-function updateSingleBuyLinks() {
-  document.querySelectorAll('[data-role="buy-single"]').forEach((link) => {
-    const productCard = link.closest('.product');
-    if (!productCard) return;
-
-    const product = products.find((item) => item.id === productCard.dataset.id);
-    if (!product) return;
-
-    link.href = buildOrderHref(
-      [{ ...product, quantity: 1, total: product.price }],
-      'once',
-      `Buy ${product.name}`
-    );
+async function createRazorpayOrder(items, selectedPlan) {
+  const response = await fetch('/api/payments/razorpay/order', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      plan: selectedPlan,
+      items: items.map((item) => ({
+        id: item.id,
+        quantity: item.quantity
+      }))
+    })
   });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Could not start Razorpay Checkout.');
+  }
+
+  return data;
+}
+
+async function verifyRazorpayPayment(paymentResponse) {
+  const response = await fetch('/api/payments/razorpay/verify', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify(paymentResponse)
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Payment verification failed.');
+  }
+
+  return data;
 }
 
 function updateQuantity(productId, nextValue) {
@@ -150,10 +188,99 @@ function updateQuantity(productId, nextValue) {
   updateSummary();
 }
 
+async function openRazorpayCheckout(items, selectedPlan) {
+  if (isPaymentInFlight) {
+    return;
+  }
+
+  setPaymentStatus('info', 'Preparing secure Razorpay checkout...');
+  isPaymentInFlight = true;
+  updateSummary();
+  let checkoutOpened = false;
+
+  try {
+    const runtimeConfig = await getRuntimeConfig();
+
+    if (!runtimeConfig.razorpayKeyId) {
+      throw new Error('Razorpay keys are not configured on this server yet.');
+    }
+
+    if (typeof window.Razorpay !== 'function') {
+      throw new Error('Razorpay Checkout could not be loaded.');
+    }
+
+    const orderData = await createRazorpayOrder(items, selectedPlan);
+    const checkoutOptions = {
+      ...orderData.checkout,
+      key: runtimeConfig.razorpayKeyId,
+      prefill: {
+        contact: '',
+        email: ''
+      },
+      notes: {
+        plan: selectedPlan
+      },
+      handler: async (paymentResponse) => {
+        try {
+          const verification = await verifyRazorpayPayment(paymentResponse);
+          setPaymentStatus(
+            'success',
+            `${verification.message} Payment ID: ${verification.paymentId}.`
+          );
+        } catch (error) {
+          setPaymentStatus('error', error.message);
+        } finally {
+          isPaymentInFlight = false;
+          updateSummary();
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          if (document.getElementById('payment-status')?.classList.contains('payment-status--success')) {
+            isPaymentInFlight = false;
+            updateSummary();
+            return;
+          }
+
+          isPaymentInFlight = false;
+          updateSummary();
+          setPaymentStatus('info', 'Razorpay Checkout was closed before payment completed.');
+        }
+      }
+    };
+
+    const razorpay = new window.Razorpay(checkoutOptions);
+
+    razorpay.on('payment.failed', (event) => {
+      const reason =
+        event?.error?.description ||
+        event?.error?.reason ||
+        'Razorpay could not complete the payment.';
+      isPaymentInFlight = false;
+      updateSummary();
+      setPaymentStatus('error', reason);
+    });
+
+    razorpay.open();
+    checkoutOpened = true;
+    setPaymentStatus('info', 'Complete the payment securely in Razorpay Checkout.');
+  } catch (error) {
+    setPaymentStatus('error', error.message);
+    isPaymentInFlight = false;
+    updateSummary();
+  } finally {
+    if (!checkoutOpened && isPaymentInFlight) {
+      isPaymentInFlight = false;
+      updateSummary();
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.plan-switch button').forEach((button) => {
     button.addEventListener('click', () => {
       plan = button.dataset.plan || 'weekly';
+      setPaymentStatus('', '');
 
       document.querySelectorAll('.plan-switch button').forEach((otherButton) => {
         otherButton.classList.toggle('is-active', otherButton === button);
@@ -167,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productId = productCard.dataset.id;
     const increaseButton = productCard.querySelector('[data-action="increase"]');
     const decreaseButton = productCard.querySelector('[data-action="decrease"]');
+    const buyButton = productCard.querySelector('[data-role="buy-single"]');
 
     increaseButton?.addEventListener('click', () => {
       updateQuantity(productId, quantities[productId] + 1);
@@ -175,8 +303,54 @@ document.addEventListener('DOMContentLoaded', () => {
     decreaseButton?.addEventListener('click', () => {
       updateQuantity(productId, quantities[productId] - 1);
     });
+
+    buyButton?.addEventListener('click', async (event) => {
+      event.preventDefault();
+      setPaymentStatus('', '');
+      const product = products.find((item) => item.id === productId);
+
+      if (!product) {
+        return;
+      }
+
+      await openRazorpayCheckout(
+        [
+          {
+            ...product,
+            quantity: 1
+          }
+        ],
+        'once'
+      );
+    });
   });
 
-  updateSingleBuyLinks();
+  document.getElementById('buy-selected')?.addEventListener('click', async (event) => {
+    event.preventDefault();
+
+    const selectedItems = getSelectedItems();
+
+    if (!selectedItems.length || isPaymentInFlight) {
+      return;
+    }
+
+    setPaymentStatus('', '');
+    await openRazorpayCheckout(selectedItems, plan);
+  });
+
+  document.getElementById('final-buy-link')?.addEventListener('click', async (event) => {
+    event.preventDefault();
+
+    const selectedItems = getSelectedItems();
+
+    if (!selectedItems.length || isPaymentInFlight) {
+      document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    setPaymentStatus('', '');
+    await openRazorpayCheckout(selectedItems, plan);
+  });
+
   updateSummary();
 });

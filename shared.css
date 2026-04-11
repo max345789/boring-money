@@ -305,6 +305,7 @@ p {
 
 .button.is-disabled {
   opacity: 0.82;
+  pointer-events: none;
 }
 
 .hero-proof {
@@ -749,6 +750,32 @@ p {
 .summary-row-total strong,
 .summary-row-total span {
   font-size: 1.02rem;
+}
+
+.payment-status {
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  border: 1px solid transparent;
+}
+
+.payment-status--info {
+  color: #d6e9c6;
+  background: rgba(214, 242, 184, 0.08);
+  border-color: rgba(214, 242, 184, 0.14);
+}
+
+.payment-status--success {
+  color: #d4f7cf;
+  background: rgba(87, 180, 108, 0.12);
+  border-color: rgba(87, 180, 108, 0.22);
+}
+
+.payment-status--error {
+  color: #ffd7d2;
+  background: rgba(214, 93, 74, 0.14);
+  border-color: rgba(214, 93, 74, 0.2);
 }
 
 .ritual-grid,

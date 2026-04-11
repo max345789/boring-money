@@ -10,6 +10,7 @@ BoringMoney is a deployable Express application that serves the current custom H
 - SQLite via `node:sqlite` fallback
 - Vanilla JavaScript
 - Nodemailer for optional ops notifications
+- Razorpay Checkout for microgreens payments
 - Cloudflare Turnstile for optional bot protection
 - Sentry for optional backend monitoring
 
@@ -18,6 +19,7 @@ BoringMoney is a deployable Express application that serves the current custom H
 - Custom UI served directly from the root HTML files through Express routes
 - Newsletter signup backend with validation, deduplication, Supabase/Postgres persistence, and async frontend submission
 - Advertiser inquiry backend with validation and Supabase/Postgres persistence
+- Razorpay-backed microgreens checkout with server-side order creation and signature verification
 - Global rate limiting across all endpoints, plus stricter limits for signup and inquiry endpoints
 - Optional Turnstile verification on subscriber and inquiry endpoints
 - Admin-protected dashboard and CSV exports for subscribers and inquiries
@@ -89,6 +91,11 @@ Optional bot protection:
 - `TURNSTILE_SITE_KEY`
 - `TURNSTILE_SECRET_KEY`
 
+Optional payments:
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+
 Optional monitoring:
 
 - `SENTRY_DSN`
@@ -124,6 +131,8 @@ Operational:
 - `GET /ready`
 - `GET /api/health`
 - `GET /api/runtime-config`
+- `POST /api/payments/razorpay/order`
+- `POST /api/payments/razorpay/verify`
 
 API:
 
@@ -190,7 +199,7 @@ docker run -p 3000:3000 \
 - no persistent disk requirement
 
 Set `DATABASE_URL`, admin credentials, and any SMTP secrets in Render before going live.
-Set Turnstile and Sentry env vars only if you enable those integrations.
+Set Turnstile, Razorpay, and Sentry env vars only if you enable those integrations.
 
 ## Test
 

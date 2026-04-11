@@ -39,6 +39,8 @@ const envSchema = z.object({
   TRUST_PROXY: z.string().optional(),
   TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+  RAZORPAY_KEY_ID: z.string().min(1).optional(),
+  RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
   SENTRY_DSN: z.string().url().optional(),
   SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).optional(),
   ADMIN_USERNAME: z.string().min(1).optional(),
@@ -59,6 +61,17 @@ const envSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ['TURNSTILE_SITE_KEY'],
       message: 'TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY must be provided together.'
+    });
+  }
+
+  const hasRazorpayKeyId = Boolean(value.RAZORPAY_KEY_ID);
+  const hasRazorpayKeySecret = Boolean(value.RAZORPAY_KEY_SECRET);
+
+  if (hasRazorpayKeyId !== hasRazorpayKeySecret) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['RAZORPAY_KEY_ID'],
+      message: 'RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be provided together.'
     });
   }
 });
@@ -86,6 +99,13 @@ const config = {
       ? {
           siteKey: env.TURNSTILE_SITE_KEY,
           secretKey: env.TURNSTILE_SECRET_KEY
+        }
+      : null,
+  razorpay:
+    env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET
+      ? {
+          keyId: env.RAZORPAY_KEY_ID,
+          keySecret: env.RAZORPAY_KEY_SECRET
         }
       : null,
   sentry:
