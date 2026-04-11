@@ -1,55 +1,83 @@
-// Content Protection
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('copy', e => e.preventDefault());
-document.addEventListener('cut', e => e.preventDefault());
-document.addEventListener('dragstart', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-  if (e.key === 'F12') { e.preventDefault(); return false; }
-  if (e.ctrlKey && e.shiftKey && ['I','i','J','j','C','c'].includes(e.key)) { e.preventDefault(); return false; }
-  if (e.ctrlKey && ['u','U','s','S'].includes(e.key)) { e.preventDefault(); return false; }
-  if (e.metaKey && e.altKey && ['i','I','j','J','c','C'].includes(e.key)) { e.preventDefault(); return false; }
-  if (e.metaKey && ['u','U','s','S'].includes(e.key)) { e.preventDefault(); return false; }
-});
+(function () {
+  const blockedShortcuts = new Set(['F12']);
+  const devtoolsThreshold = 180;
 
-// Mobile Hamburger Menu — injected dynamically
-document.addEventListener('DOMContentLoaded', () => {
-  const nav = document.querySelector('nav');
-  if (!nav) return;
+  function isEditableTarget(target) {
+    if (!target || !(target instanceof Element)) {
+      return false;
+    }
 
-  // Create hamburger button
-  const hamburger = document.createElement('button');
-  hamburger.className = 'hamburger';
-  hamburger.setAttribute('aria-label', 'Menu');
-  hamburger.innerHTML = '<span></span><span></span><span></span>';
-  nav.appendChild(hamburger);
+    return Boolean(
+      target.closest(
+        'input, textarea, select, [contenteditable="true"], [data-allow-copy="true"]'
+      )
+    );
+  }
 
-  // Create mobile overlay
-  const overlay = document.createElement('div');
-  overlay.className = 'mobile-overlay';
-  overlay.innerHTML = `
-    <a href="index.html">Home</a>
-    <a href="issues.html">Issues</a>
-    <a href="about.html">About</a>
-    <a href="playbooks.html">Playbooks</a>
-    <a href="community.html">Community</a>
-    <a href="advertise.html">Advertise</a>
-    <a href="subscribe.html" class="mob-cta">Subscribe — Free</a>
-  `;
-  document.body.appendChild(overlay);
+  function preventIfLocked(event) {
+    if (isEditableTarget(event.target)) {
+      return;
+    }
 
-  // Toggle
-  hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    overlay.classList.toggle('active');
-    document.body.style.overflow = overlay.classList.contains('active') ? 'hidden' : '';
-  });
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
-  // Close on link click
-  overlay.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      hamburger.classList.remove('active');
-      overlay.classList.remove('active');
-      document.body.style.overflow = '';
+  function isBlockedShortcut(event) {
+    const key = String(event.key || '');
+    const lowerKey = key.toLowerCase();
+    const modifier = event.ctrlKey || event.metaKey;
+    const shiftModifier = event.ctrlKey || event.metaKey || event.shiftKey;
+
+    if (blockedShortcuts.has(key)) {
+      return true;
+    }
+
+    if (modifier && ['u', 's', 'p', 'a', 'c', 'x'].includes(lowerKey)) {
+      return true;
+    }
+
+    if (shiftModifier && modifier && ['i', 'j', 'c'].includes(lowerKey)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function updateDevtoolsState() {
+    const widthGap = Math.abs(window.outerWidth - window.innerWidth);
+    const heightGap = Math.abs(window.outerHeight - window.innerHeight);
+    const isOpen = widthGap > devtoolsThreshold || heightGap > devtoolsThreshold;
+
+    document.documentElement.classList.toggle('devtools-suspected', isOpen);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.documentElement.classList.add('ui-locked');
+
+    document.querySelectorAll('img').forEach((image) => {
+      image.setAttribute('draggable', 'false');
     });
+
+    document.addEventListener('contextmenu', preventIfLocked, true);
+    document.addEventListener('copy', preventIfLocked, true);
+    document.addEventListener('cut', preventIfLocked, true);
+    document.addEventListener('dragstart', preventIfLocked, true);
+    document.addEventListener('selectstart', preventIfLocked, true);
+
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (!isEditableTarget(event.target) && isBlockedShortcut(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      },
+      true
+    );
+
+    window.addEventListener('resize', updateDevtoolsState, { passive: true });
+    setInterval(updateDevtoolsState, 1500);
+    updateDevtoolsState();
   });
-});
+})();

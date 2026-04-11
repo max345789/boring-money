@@ -29,6 +29,48 @@ html {
   scroll-padding-top: calc(var(--header-height) + 1rem);
 }
 
+html.ui-locked body,
+html.ui-locked h1,
+html.ui-locked h2,
+html.ui-locked h3,
+html.ui-locked h4,
+html.ui-locked p,
+html.ui-locked li,
+html.ui-locked span,
+html.ui-locked strong,
+html.ui-locked em,
+html.ui-locked a,
+html.ui-locked img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html.ui-locked input,
+html.ui-locked textarea,
+html.ui-locked select,
+html.ui-locked button,
+html.ui-locked [contenteditable='true'],
+html.ui-locked [data-allow-copy='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+html.devtools-suspected body::before {
+  content: 'Protected UI: inspection is restricted on this site.';
+  position: fixed;
+  inset: auto 1rem 1rem auto;
+  z-index: 9999;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: rgba(22, 36, 23, 0.92);
+  color: #f7f4eb;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
 body {
   margin: 0;
   min-width: 320px;
